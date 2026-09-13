@@ -1,4 +1,7 @@
-import colormaps from "../../fixtures/colormaps.json";
+// Runtime data, not a test fixture: the lookup tables SHAP's own colour maps
+// resolve to, captured by running shap 0.49.1. Kept beside the code so the
+// published package does not depend on the fixtures directory.
+import colormaps from "./colormaps.json";
 
 export type ColormapName = "red_blue" | "red_white_blue";
 
