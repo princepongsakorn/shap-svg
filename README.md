@@ -36,12 +36,93 @@ host application owns its own controls. The only internal state is hover highlig
 
 ## Usage
 
+`shap-svg` draws SHAP values; it does not compute them. The values come from
+[`shap`](https://github.com/shap/shap) in Python, travel through your server as JSON, and are handed to
+a component in the browser:
+
+```text
+Python: shap computes the values  →  server returns them as JSON  →  browser fetches  →  <ShapWaterfall explanation={…} />
+```
+
+### 1. Compute SHAP values in Python and serialise them
+
+```python
+import numpy as np
+import shap
+
+explainer = shap.TreeExplainer(model)  # any shap explainer works
+
+
+def to_payload(explanation: shap.Explanation, sample_ids=None) -> dict:
+    """Serialise a shap.Explanation into the JSON shap-svg reads."""
+    payload = {
+        "contract_version": 1,
+        "values": np.asarray(explanation.values, dtype=float).tolist(),
+        "base_values": np.asarray(explanation.base_values, dtype=float).tolist(),
+        "data": np.asarray(explanation.data, dtype=float).tolist(),
+        "feature_names": [str(name) for name in explanation.feature_names],
+    }
+    if sample_ids is not None:
+        payload["sample_ids"] = [str(sample_id) for sample_id in sample_ids]
+    return payload
+```
+
+- **Pass the explanation as it comes.** A scikit-learn binary classifier gives `values` shaped
+  `(samples, features, 2)` and `base_values` shaped `(samples, 2)`; `shap-svg` reads class 1 by default
+  (`classIndex` on every component). There is no need to pick a class in Python.
+- **Send only finite numbers.** Fill or drop missing feature values first. Flask's `jsonify` writes
+  `NaN` unquoted, which is not valid JSON, and `parseExplanation` rejects it; serialising with
+  `json.dumps(payload, allow_nan=False)` makes the mistake fail on the server instead.
+- **`sample_ids` are optional** but give each Sample a stable key: the heatmap hands it back from
+  `onSampleClick`. Add `sample_labels` for the names a person should read.
+
+### 2. Return the payload from your server
+
+```python
+from flask import Flask, jsonify
+
+app = Flask(__name__)
+
+
+@app.post("/api/explain")
+def explain():
+    X = rows_to_explain()  # a pandas DataFrame, e.g. built from the request body
+    explanation = explainer(X)
+    return jsonify(to_payload(explanation, sample_ids=X.index))
+```
+
+Any framework works — the contract is only the JSON above. Serve it gzipped if you can: the payload is
+mostly repeated digits and compresses well.
+
+### 3. Fetch it in the browser and hand it to a component
+
 ```tsx
+import { useEffect, useState } from "react";
+import type { Explanation } from "shap-svg";
 import { ShapBeeswarm, ShapWaterfall } from "shap-svg/react";
 
-<ShapBeeswarm explanation={explanation} maxDisplay={15} groupByGenus rowSort="name" />
-<ShapWaterfall explanation={explanation} sampleIndex={0} decimals="percent" />
+export function ExplanationView() {
+  const [explanation, setExplanation] = useState<Explanation>();
+
+  useEffect(() => {
+    fetch("/api/explain", { method: "POST" })
+      .then((response) => response.json())
+      .then(setExplanation);
+  }, []);
+
+  if (!explanation) return <p>Loading…</p>;
+
+  return (
+    <>
+      <ShapBeeswarm explanation={explanation} maxDisplay={15} groupByGenus rowSort="name" />
+      <ShapWaterfall explanation={explanation} sampleIndex={0} decimals="percent" />
+    </>
+  );
+}
 ```
+
+From here every control — how many features, grouping, sorting, precision — is a prop. Changing one
+redraws from the payload already in memory; nothing goes back to the server.
 
 The framework-free core — parsing, ordering, collapsing, layout and colour — has no React import and
 can drive any renderer:
