@@ -1,0 +1,76 @@
+name: Publish to npm
+
+# A merge into main publishes whatever version package.json declares — once.
+# If that version is already on npm the job ends quietly, so merges that do not
+# bump the version are no-ops. To release: bump "version" in a PR, then merge.
+on:
+  push:
+    branches: [main]
+  # For the very first release, or to retry after fixing npm-side setup.
+  workflow_dispatch:
+
+# Two merges in quick succession must not race each other to the registry.
+concurrency:
+  group: publish-npm
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/shap-svg
+    permissions:
+      # Trusted publishing — no token stored in GitHub. Configure the trusted
+      # publisher on npmjs.com (see PUBLISHING.md). Also what signs provenance.
+      id-token: write
+      # To create the vX.Y.Z tag and its GitHub Release.
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Trusted publishing needs Node >= 22.14.0 and npm CLI >= 11.5.1.
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - name: Update npm CLI
+        run: npm install -g npm@latest && npm --version
+
+      - name: Is this version new?
+        id: version
+        run: |
+          NAME=$(node -p "require('./package.json').name")
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if npm view "$NAME@$VERSION" version > /dev/null 2>&1; then
+            echo "publish=false" >> "$GITHUB_OUTPUT"
+            echo "\`$NAME@$VERSION\` is already on npm — nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "Publishing \`$NAME@$VERSION\`." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Install
+        if: steps.version.outputs.publish == 'true'
+        run: npm ci
+
+      # prepublishOnly runs typecheck, tests and build before anything is uploaded.
+      # With trusted publishing from a public repository npm attaches provenance
+      # automatically; no --provenance flag or token is needed.
+      - name: Publish
+        if: steps.version.outputs.publish == 'true'
+        run: npm publish --access public
+
+      - name: Tag and release
+        if: steps.version.outputs.publish == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if gh release view "v$VERSION" > /dev/null 2>&1; then
+            echo "Release v$VERSION already exists."
+          else
+            gh release create "v$VERSION" --target "$GITHUB_SHA" --title "v$VERSION" --generate-notes
+          fi
