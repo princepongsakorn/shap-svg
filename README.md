@@ -26,10 +26,10 @@ affiliated with the SHAP authors.
 
 | Component | SHAP counterpart | Shows |
 | --- | --- | --- |
-| `ShapBar` | `shap.plots.bar` | mean(\|SHAP value\|) per feature across samples |
-| `ShapBeeswarm` | `shap.plots.beeswarm` | one dot per sample per feature, coloured by feature value |
-| `ShapHeatmap` | `shap.plots.heatmap` | samples × features coloured by SHAP value, with the f(x) line above |
-| `ShapWaterfall` | `shap.plots.waterfall` | how one sample's prediction is built from E[f(X)] to f(x) |
+| `Plots.bar` | `shap.plots.bar` | mean(\|SHAP value\|) per feature across samples |
+| `Plots.beeswarm` | `shap.plots.beeswarm` | one dot per sample per feature, coloured by feature value |
+| `Plots.heatmap` | `shap.plots.heatmap` | samples × features coloured by SHAP value, with the f(x) line above |
+| `Plots.waterfall` | `shap.plots.waterfall` | how one sample's prediction is built from E[f(X)] to f(x) |
 
 Every chart is a pure component: all state that changes what is drawn arrives through props, so the
 host application owns its own controls. The only internal state is hover highlighting.
@@ -41,7 +41,7 @@ host application owns its own controls. The only internal state is hover highlig
 a component in the browser:
 
 ```text
-Python: shap computes the values  →  server returns them as JSON  →  browser fetches  →  <ShapWaterfall explanation={…} />
+Python: shap computes the values  →  server returns them as JSON  →  browser fetches  →  <Plots.waterfall explanation={…} />
 ```
 
 ### 1. Compute SHAP values in Python and serialise them
@@ -99,7 +99,7 @@ mostly repeated digits and compresses well.
 ```tsx
 import { useEffect, useState } from "react";
 import type { Explanation } from "shap-svg";
-import { ShapBeeswarm, ShapWaterfall } from "shap-svg/react";
+import { Plots } from "shap-svg/react";
 
 export function ExplanationView() {
   const [explanation, setExplanation] = useState<Explanation>();
@@ -114,12 +114,15 @@ export function ExplanationView() {
 
   return (
     <>
-      <ShapBeeswarm explanation={explanation} maxDisplay={15} groupByGenus rowSort="name" />
-      <ShapWaterfall explanation={explanation} sampleIndex={0} decimals="percent" />
+      <Plots.beeswarm explanation={explanation} maxDisplay={15} groupByGenus rowSort="name" />
+      <Plots.waterfall explanation={explanation} sampleIndex={0} decimals="percent" />
     </>
   );
 }
 ```
+
+The charts are named the way `shap` names them in Python: `shap.plots.bar` becomes `<Plots.bar />`.
+`Plots` brings all four charts into your bundle, even if a page draws one — about 30 KB minified.
 
 From here every control — how many features, grouping, sorting, precision — is a prop. Changing one
 redraws from the payload already in memory; nothing goes back to the server.
@@ -175,11 +178,11 @@ Per chart:
 
 | Chart | Prop | Default | |
 | --- | --- | --- | --- |
-| `ShapBeeswarm`, `ShapHeatmap` | `rowSort` | `"importance"` | `"importance"`, `"name"` or `"featureValue"`; reorders the rows shown, never which rows are shown |
-| `ShapBeeswarm` | `seed`, `dotRadius` | `0`, `3` | jitter is seeded, so a chart is identical on every render |
-| `ShapHeatmap` | `onSampleClick` | — | called with the column's `sample_ids` entry |
-| `ShapWaterfall` | `sampleIndex` | `0` | which sample to explain |
-| `ShapWaterfall` | `decimals` | `2` | `2`, `3`, `4` or `"percent"`; display only |
+| `Plots.beeswarm`, `Plots.heatmap` | `rowSort` | `"importance"` | `"importance"`, `"name"` or `"featureValue"`; reorders the rows shown, never which rows are shown |
+| `Plots.beeswarm` | `seed`, `dotRadius` | `0`, `3` | jitter is seeded, so a chart is identical on every render |
+| `Plots.heatmap` | `onSampleClick` | — | called with the column's `sample_ids` entry |
+| `Plots.waterfall` | `sampleIndex` | `0` | which sample to explain |
+| `Plots.waterfall` | `decimals` | `2` | `2`, `3`, `4` or `"percent"`; display only |
 
 ## Faithful to SHAP where it matters
 
