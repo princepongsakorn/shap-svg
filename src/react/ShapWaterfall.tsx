@@ -49,11 +49,18 @@ export function ShapWaterfall({
   const words = useMemo(() => resolveLabels(labels), [labels]);
   const marginTop = 34;
 
-  const layout = useMemo(() => {
+  const { layout, sampleName } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
     const rows = waterfallRows(parsed, sampleIndex, maxDisplay, faithfulOtherRow, words);
-    return waterfallLayout(rows, {
+    const sampleLabel = raw.sampleLabels?.[sampleIndex];
+    // Named as the heatmap names its column, so a sample reads the same everywhere.
+    const sampleName = sampleLabel
+      ? raw.sampleLabelColumn
+        ? `${raw.sampleLabelColumn}: ${sampleLabel}`
+        : sampleLabel
+      : words.sampleFallback(sampleIndex + 1);
+    const layout = waterfallLayout(rows, {
       width,
       rowHeight,
       marginLeft: 260,
@@ -62,6 +69,7 @@ export function ShapWaterfall({
       decimals,
       labels: words,
     });
+    return { layout, sampleName };
   }, [groupByGenus, 
     explanation, sampleIndex, maxDisplay, faithfulOtherRow,
     classIndex, width, rowHeight, decimals, words,
@@ -72,7 +80,7 @@ export function ShapWaterfall({
       width={width}
       height={layout.height}
       role="img"
-      aria-label={`Local SHAP waterfall for Sample ${sampleIndex}`}
+      aria-label={`${words.shapValue} of each feature for ${sampleName}`}
     >
       {layout.separators.map((separator, index) => (
         <line

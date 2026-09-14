@@ -2,6 +2,7 @@ import { MouseEvent as ReactMouseEvent, useMemo, useState } from "react";
 import { beeswarmLayout, beeswarmRows } from "../core/beeswarmLayout";
 import { formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
+import { placeTooltip } from "../core/tooltip";
 import { ColorBar } from "./ColorBar";
 import { XAxis } from "./XAxis";
 import { parseExplanation } from "../core/parse";
@@ -91,9 +92,35 @@ export function ShapBeeswarm({
   const activePoint = hovered
     ? activeRow?.points[hovered.pointIndex]
     : activeRow?.points[0];
+  const tooltipLines = activeRow && activePoint
+    ? [
+        activeRow.label,
+        `${words.shapValue}: ${formatShapValue(activePoint.valueX)}`,
+        // Unsigned: a feature value is an input, not a push in either direction.
+        `${words.featureValue}: ${Number.isFinite(activePoint.featureValue)
+          ? formatLevel(activePoint.featureValue)
+          : words.missingFeatureValue}`,
+      ]
+    : [];
+  const tooltip = activePoint
+    ? placeTooltip({
+        anchorX: activePoint.x,
+        anchorY: activePoint.y,
+        lines: tooltipLines,
+        lineHeight: 15,
+        minWidth: 160,
+        chartWidth: width,
+        chartHeight: layout.height,
+      })
+    : null;
 
   return (
-    <svg width={width} height={layout.height} role="img" aria-label="Global SHAP beeswarm">
+    <svg
+      width={width}
+      height={layout.height}
+      role="img"
+      aria-label={`${words.shapValue} of each feature, for every sample`}
+    >
       <line
         x1={layout.xZero}
         x2={layout.xZero}
@@ -153,23 +180,26 @@ export function ShapBeeswarm({
 
       {layout.colorBar && <ColorBar bar={layout.colorBar} />}
 
-      {activeRow && activePoint && (
+      {tooltip && (
         <g
           opacity={hovered ? 1 : 0}
           pointerEvents="none"
-          transform={`translate(${activePoint.x + 8} ${activePoint.y - 8})`}
+          transform={`translate(${tooltip.x} ${tooltip.y})`}
         >
-          <rect x={0} y={-16} width={210} height={54} rx={3} fill="#ffffff" stroke="#cccccc" />
-          <text x={7} y={0} fontSize={11} fill="#222222">{activeRow.label}</text>
-          <text x={7} y={15} fontSize={11} fill="#222222">
-            {`${words.shapValue}: ${formatShapValue(activePoint.valueX)}`}
-          </text>
-          <text x={7} y={30} fontSize={11} fill="#222222">
-            {/* Unsigned: a feature value is an input, not a push in either direction. */}
-            {`${words.featureValue}: ${Number.isFinite(activePoint.featureValue)
-              ? formatLevel(activePoint.featureValue)
-              : words.missingFeatureValue}`}
-          </text>
+          <rect
+            x={0}
+            y={0}
+            width={tooltip.width}
+            height={tooltip.height}
+            rx={3}
+            fill="#ffffff"
+            stroke="#cccccc"
+          />
+          {tooltipLines.map((line, index) => (
+            <text key={`tooltip-${index}`} x={7} y={16 + index * 15} fontSize={11} fill="#222222">
+              {line}
+            </text>
+          ))}
         </g>
       )}
     </svg>

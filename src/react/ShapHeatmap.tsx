@@ -85,7 +85,12 @@ export function ShapHeatmap({
     : 0;
 
   return (
-    <svg width={width} height={layout.height} role="img" aria-label="Global SHAP heatmap">
+    <svg
+      width={width}
+      height={layout.height}
+      role="img"
+      aria-label={`${words.shapValue} by feature and sample`}
+    >
       {layout.fxAxisMarks.map((mark) => (
         <g key={`fx-axis-${mark.value}`}>
           <line
