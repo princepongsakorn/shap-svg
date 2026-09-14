@@ -1,4 +1,12 @@
 import { collapseToDisplay } from "./collapse";
+import {
+  ColorBarGeometry,
+  ColorBarSpec,
+  colorBarExtent,
+  colorBarLayout,
+  fitColorBar,
+  scalarFormatterLabels,
+} from "./colorBar";
 import { sampleColormap } from "./colormap";
 import { formatShapValue } from "./format";
 import { RowSort, sortDisplayRows } from "./rowSort";
@@ -24,6 +32,14 @@ const SIDE_BAR_HEIGHT_RATIO = 0.6;
 const AXIS_HEIGHT = 52;
 /** _heatmap.py leaves x tick labels at matplotlib's default "medium", 10 pt. */
 const TICK_LABEL_PT = 10;
+/**
+ * plt.colorbar(..., fraction=0.01, pad=0.10), _heatmap.py:180-186, as fractions
+ * of the axes before the bar is taken out of it: the gap is 0.10 of that and the
+ * plot keeps 0.89.
+ */
+const COLOR_BAR_GAP_RATIO = 0.1 / 0.89;
+/** Space kept between the longest side bar and the colour bar. */
+const COLOR_BAR_CLEARANCE = 8;
 
 export type HeatmapCell = {
   /** Original index in the Explanation, before Sample ordering. */
@@ -76,6 +92,8 @@ export type HeatmapLayoutOptions = {
   marginRight: number;
   /** Top of the matrix; the f(x) line occupies the space above it. */
   marginTop: number;
+  /** Draw SHAP's SHAP value colour bar right of the side bars. */
+  colorBar?: boolean;
 };
 
 export type HeatmapCellGeometry = HeatmapCell & {
@@ -156,6 +174,8 @@ export type HeatmapLayout = {
   xTitle: AxisTitle;
   plotWidth: number;
   cellWidth: number;
+  /** Null unless the options asked for one. */
+  colorBar: ColorBarGeometry | null;
   height: number;
 };
 
@@ -303,11 +323,33 @@ export function heatmapLayout(
   opts: HeatmapLayoutOptions,
 ): HeatmapLayout {
   const { width, rowHeight, marginLeft, marginRight, marginTop } = opts;
-  const plotWidth = width - marginLeft - marginRight;
-  const cellWidth = valueRows.columns.length === 0 ? 0 : plotWidth / valueRows.columns.length;
-  const gridRight = marginLeft + plotWidth;
   const plotBottom = marginTop + valueRows.rows.length * rowHeight;
   const sideBarWidth = Math.max(0, marginRight - SIDE_BAR_RIGHT_INSET - SIDE_BAR_GAP);
+
+  // _heatmap.py:180-188: ticks at the two ends of the symmetric colour range,
+  // labelled by matplotlib's default formatter.
+  const ticks = scalarFormatterLabels([valueRows.vmin, valueRows.vmax]);
+  const colorBarSpec: ColorBarSpec = {
+    colormap: "red_white_blue",
+    tickLabels: [ticks.labels[0], ticks.labels[1]],
+    ...(ticks.offsetText ? { offsetText: ticks.offsetText } : {}),
+    label: "SHAP value (impact on model output)",
+    labelPad: -10,
+  };
+  // The bar is sized against the whole axes, which includes the f(x) chart.
+  const colorBarTop = FX_TOP;
+  const fit = opts.colorBar
+    ? fitColorBar({
+        plotWidth: width - marginLeft - marginRight,
+        available: marginRight,
+        gapRatio: COLOR_BAR_GAP_RATIO,
+        minGap: SIDE_BAR_GAP + sideBarWidth + COLOR_BAR_CLEARANCE,
+        extent: colorBarExtent(plotBottom - colorBarTop, colorBarSpec),
+      })
+    : null;
+  const plotWidth = fit ? fit.plotWidth : width - marginLeft - marginRight;
+  const cellWidth = valueRows.columns.length === 0 ? 0 : plotWidth / valueRows.columns.length;
+  const gridRight = marginLeft + plotWidth;
 
   const columns = valueRows.columns.map((column, index): HeatmapColumnGeometry => ({
     ...column,
@@ -384,6 +426,13 @@ export function heatmapLayout(
     sampleLabelColumn: valueRows.sampleLabelColumn,
     plotWidth,
     cellWidth,
+    colorBar: fit
+      ? colorBarLayout(colorBarSpec, {
+          x: gridRight + fit.gap,
+          y1: colorBarTop,
+          y2: plotBottom,
+        })
+      : null,
     height: plotBottom + AXIS_HEIGHT,
   };
 }

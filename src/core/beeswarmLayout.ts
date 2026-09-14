@@ -1,4 +1,11 @@
 import { collapseToDisplay } from "./collapse";
+import {
+  ColorBarGeometry,
+  ColorBarSpec,
+  colorBarExtent,
+  colorBarLayout,
+  fitColorBar,
+} from "./colorBar";
 import { sampleColormap } from "./colormap";
 import { RowSort, sortDisplayRows } from "./rowSort";
 import {
@@ -16,12 +23,20 @@ import { ParsedExplanation } from "./types";
 export const BEESWARM_MISSING_COLOR = "#777777";
 export const BEESWARM_ROW_HEIGHT = 0.4;
 const NBINS = 100;
+/** Room below the rows for ticks, their labels and the axis title. */
+const AXIS_HEIGHT = 52;
+/** fig.colorbar(m, ax=ax, ticks=[0, 1], aspect=80) with Low/High labels, _beeswarm.py:479-483. */
+const COLOR_BAR: ColorBarSpec = {
+  colormap: "red_blue",
+  tickLabels: ["Low", "High"],
+  label: "Feature value",
+  labelPad: 0,
+};
 /**
- * Room below the rows for ticks, their labels and the axis title — and below
- * those, a band for the hover colour legend, which would otherwise sit on the
- * title's right end.
+ * fig.colorbar's defaults, pad=0.05 and fraction=0.15, are fractions of the axes
+ * before the bar is taken out of it: the gap is 0.05 of that and the plot keeps 0.80.
  */
-const AXIS_HEIGHT = 74;
+const COLOR_BAR_GAP_RATIO = 0.05 / 0.8;
 /** _beeswarm.py:499 tick_params("x", labelsize=11). */
 const TICK_LABEL_PT = 11;
 /** _beeswarm.py:501 set_xlabel(..., fontsize=13). */
@@ -66,6 +81,8 @@ export type BeeswarmLayoutOptions = {
   marginRight: number;
   marginTop: number;
   dotRadius: number;
+  /** Draw SHAP's feature value colour bar right of the plot. */
+  colorBar?: boolean;
 };
 
 export type BeeswarmPointGeometry = Omit<BeeswarmPoint, "x" | "y"> & {
@@ -91,6 +108,8 @@ export type BeeswarmLayout = {
   /** The bottom spine, which _beeswarm.py:493-495 leaves visible. */
   xSpine: AxisSpine | null;
   xTitle: AxisTitle;
+  /** Null unless the options asked for one. */
+  colorBar: ColorBarGeometry | null;
   height: number;
 };
 
@@ -287,7 +306,17 @@ export function beeswarmLayout(
   opts: BeeswarmLayoutOptions,
 ): BeeswarmLayout {
   const { width, rowHeight, marginLeft, marginRight, marginTop, dotRadius } = opts;
-  const plotWidth = width - marginLeft - marginRight;
+  const plotBottom = marginTop + valueRows.rows.length * rowHeight;
+  const fit = opts.colorBar
+    ? fitColorBar({
+        plotWidth: width - marginLeft - marginRight,
+        available: marginRight,
+        gapRatio: COLOR_BAR_GAP_RATIO,
+        minGap: 0,
+        extent: colorBarExtent(plotBottom - marginTop, COLOR_BAR),
+      })
+    : null;
+  const plotWidth = fit ? fit.plotWidth : width - marginLeft - marginRight;
   const values = valueRows.rows.flatMap((row) => row.points.map((point) => point.x));
   const dataMin = Math.min(0, ...values);
   const dataMax = Math.max(0, ...values);
@@ -317,7 +346,6 @@ export function beeswarmLayout(
     };
   });
 
-  const plotBottom = marginTop + valueRows.rows.length * rowHeight;
   return {
     rows,
     xDomain: [min, max],
@@ -325,6 +353,13 @@ export function beeswarmLayout(
     ...beeswarmXAxis(min, max, toX, marginLeft, plotWidth, plotBottom),
     plotWidth,
     plotBottom,
+    colorBar: fit
+      ? colorBarLayout(COLOR_BAR, {
+          x: marginLeft + plotWidth + fit.gap,
+          y1: marginTop,
+          y2: plotBottom,
+        })
+      : null,
     height: plotBottom + AXIS_HEIGHT,
   };
 }

@@ -179,6 +179,7 @@ Per chart:
 | Chart | Prop | Default | |
 | --- | --- | --- | --- |
 | `Plots.beeswarm`, `Plots.heatmap` | `rowSort` | `"importance"` | `"importance"`, `"name"` or `"featureValue"`; reorders the rows shown, never which rows are shown |
+| `Plots.beeswarm`, `Plots.heatmap` | `colorBar` | `true` | SHAP's colour bar right of the plot — Low to High feature value on the beeswarm, the SHAP value range on the heatmap. The plot narrows when the right margin cannot hold it |
 | `Plots.beeswarm` | `seed`, `dotRadius` | `0`, `3` | jitter is seeded, so a chart is identical on every render |
 | `Plots.heatmap` | `onSampleClick` | — | called with the column's `sample_ids` entry |
 | `Plots.waterfall` | `sampleIndex` | `0` | which sample to explain |

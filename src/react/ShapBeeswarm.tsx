@@ -1,7 +1,7 @@
 import { MouseEvent as ReactMouseEvent, useMemo, useState } from "react";
 import { beeswarmLayout, beeswarmRows } from "../core/beeswarmLayout";
-import { sampleColormap } from "../core/colormap";
 import { formatShapValue } from "../core/format";
+import { ColorBar } from "./ColorBar";
 import { XAxis } from "./XAxis";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
@@ -21,6 +21,8 @@ export type ShapBeeswarmProps = {
   rowHeight?: number;
   seed?: number;
   dotRadius?: number;
+  /** SHAP's Low–High feature value colour bar, as color_bar=True draws it. */
+  colorBar?: boolean;
   onFeatureClick?: (featureIndex: number | null) => void;
 };
 
@@ -37,6 +39,7 @@ export function ShapBeeswarm({
   rowHeight = 28,
   seed = 0,
   dotRadius = 3,
+  colorBar = true,
   onFeatureClick,
 }: ShapBeeswarmProps) {
   const [hovered, setHovered] = useState<HoveredPoint | null>(null);
@@ -53,8 +56,9 @@ export function ShapBeeswarm({
       marginRight: 90,
       marginTop,
       dotRadius,
+      colorBar,
     });
-  }, [groupByGenus, rowSort, 
+  }, [groupByGenus, rowSort, colorBar,
     explanation,
     maxDisplay,
     faithfulOtherRow,
@@ -77,7 +81,6 @@ export function ShapBeeswarm({
   const activePoint = hovered
     ? activeRow?.points[hovered.pointIndex]
     : activeRow?.points[0];
-  const legendSteps = 32;
 
   return (
     <svg width={width} height={layout.height} role="img" aria-label="Global SHAP beeswarm">
@@ -138,32 +141,7 @@ export function ShapBeeswarm({
         tickFontSize={11}
       />
 
-      {activeRow && (
-        <g aria-label="Feature value colour scale">
-          {Array.from({ length: legendSteps }, (_, index) => (
-            <rect
-              key={`legend-${index}`}
-              x={width - 160 + index * 4}
-              y={layout.height - 22}
-              width={4}
-              height={7}
-              fill={sampleColormap("red_blue", index / (legendSteps - 1))}
-            />
-          ))}
-          <text x={width - 160} y={layout.height - 3} fontSize={10} fill="#555555">
-            {formatShapValue(activeRow.vmin)}
-          </text>
-          <text
-            x={width - 32}
-            y={layout.height - 3}
-            textAnchor="end"
-            fontSize={10}
-            fill="#555555"
-          >
-            {formatShapValue(activeRow.vmax)}
-          </text>
-        </g>
-      )}
+      {layout.colorBar && <ColorBar bar={layout.colorBar} />}
 
       {activeRow && activePoint && (
         <g

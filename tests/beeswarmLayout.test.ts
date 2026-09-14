@@ -201,8 +201,9 @@ describe("beeswarmLayout", () => {
     expect(layout.xDomain[1]).toBeCloseTo(2.2, 12);
     expect(layout.xZero).toBe(225);
     expect(layout.plotWidth).toBe(250);
-    // 74: ticks, labels and title, plus a band below them for the hover legend.
-    expect(layout.height).toBe(164);
+    // 52: ticks, their labels and the axis title.
+    expect(layout.height).toBe(142);
+    expect(layout.colorBar).toBeNull();
     expect(layout.rows.map((row) => row.centerY)).toEqual([30, 70]);
     expect(layout.rows[0].points[0]).toMatchObject({ radius: 3, sampleIndex: 0 });
     // A value of 2 on the padded [-2.2, 2.2] axis, rather than at the plot's edge.

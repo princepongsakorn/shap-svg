@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { formatShapValue } from "../core/format";
 import { XAxis } from "./XAxis";
+import { ColorBar } from "./ColorBar";
 import { heatmapLayout, heatmapRows } from "../core/heatmapLayout";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
@@ -18,6 +19,8 @@ export type ShapHeatmapProps = {
   classIndex?: number;
   width?: number;
   rowHeight?: number;
+  /** SHAP's colour bar for the SHAP value range, as _heatmap.py always draws it. */
+  colorBar?: boolean;
   onFeatureClick?: (featureIndex: number | null) => void;
   onSampleClick?: (sampleId: string) => void;
 };
@@ -31,6 +34,7 @@ export function ShapHeatmap({
   classIndex = 1,
   width = 720,
   rowHeight = 26,
+  colorBar = true,
   onFeatureClick,
   onSampleClick,
 }: ShapHeatmapProps) {
@@ -47,8 +51,9 @@ export function ShapHeatmap({
       marginLeft: 260,
       marginRight: 100,
       marginTop,
+      colorBar,
     });
-  }, [groupByGenus, rowSort, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight]);
+  }, [groupByGenus, rowSort, colorBar, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight]);
 
   const activeColumn = hoveredColumn === null ? undefined : layout.columns[hoveredColumn];
 
@@ -142,6 +147,8 @@ export function ShapHeatmap({
           />
         ))}
       </g>
+
+      {layout.colorBar && <ColorBar bar={layout.colorBar} />}
 
       {layout.rows.map((row, rowIndex) => (
         <g
