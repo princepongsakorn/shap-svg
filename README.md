@@ -172,6 +172,7 @@ Shared by all four charts:
 | `classIndex` | `1` | which output to draw for multi-output explanations |
 | `width` | `720` | SVG width in pixels |
 | `rowHeight` | per chart | pixels per feature row |
+| `labels` | SHAP's wording | text the chart draws; see [Wording](#wording) |
 | `onFeatureClick` | — | called with the feature index, or `null` for the "other" row |
 
 Per chart:
@@ -184,6 +185,43 @@ Per chart:
 | `Plots.heatmap` | `onSampleClick` | — | called with the column's `sample_ids` entry |
 | `Plots.waterfall` | `sampleIndex` | `0` | which sample to explain |
 | `Plots.waterfall` | `decimals` | `2` | `2`, `3`, `4` or `"percent"`; display only |
+
+## Wording
+
+Every piece of text a chart draws comes from `labels`, keyed by what it means rather than where it
+appears — a word used in two places is changed once. Give only the keys you want to change; the rest
+keep SHAP's wording, exported as `shapLabels`.
+
+```tsx
+import { Plots } from "shap-svg/react";
+import type { PlotLabels } from "shap-svg";
+
+// A module constant: a new object on every render recomputes the layout on every render.
+const researchLabels: Partial<PlotLabels> = {
+  shapValue: "Contribution",
+  shapValueAxis: "Contribution to predicted probability",
+  featureValue: "Relative abundance",
+  otherFeatures: (count) => `${count} other taxa`,
+};
+
+<Plots.beeswarm explanation={explanation} labels={researchLabels} />;
+```
+
+| Key | Default | Drawn as |
+| --- | --- | --- |
+| `shapValue` | `SHAP value` | beeswarm tooltip |
+| `shapValueAxis` | `SHAP value (impact on model output)` | beeswarm x axis, heatmap colour bar |
+| `meanAbsShapValue` | `mean(\|SHAP value\|)` | bar x axis |
+| `featureValue` | `Feature value` | beeswarm tooltip and colour bar |
+| `featureValueLow`, `featureValueHigh` | `Low`, `High` | ends of the beeswarm colour bar |
+| `missingFeatureValue` | `missing` | beeswarm tooltip, for a value the payload lacks |
+| `samples` | `Instances` | heatmap x axis |
+| `sampleTotal` | `Σφ` | heatmap tooltip |
+| `sampleFallback(n)` | `Sample n` | a heatmap column with no `sample_labels` entry |
+| `baseValue`, `modelOutput` | `E[f(X)]`, `f(x)` | the waterfall's two reference lines |
+| `otherFeatures(count, style)` | `Sum of N other features` / `N other features` | the row for every feature not shown; `style` is `"sum"` in `faithfulOtherRow` mode on bar, beeswarm and heatmap |
+
+Accessible names are built from the same words.
 
 ## Faithful to SHAP where it matters
 

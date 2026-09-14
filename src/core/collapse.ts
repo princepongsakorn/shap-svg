@@ -1,5 +1,6 @@
 import { DisplayRow, DisplayRows } from "./types";
 import { formatFeatureLabel } from "./format";
+import { PlotLabels, shapLabels } from "./labels";
 
 /**
  * Spec 3.4. `faithfulOtherRow` reproduces shap/plots/_bar.py:228-241, where the last displayed row
@@ -12,6 +13,7 @@ export function collapseToDisplay(
   order: number[],
   maxDisplay: number,
   faithfulOtherRow: boolean,
+  labels: PlotLabels = shapLabels,
 ): DisplayRows {
   const p = order.length;
 
@@ -38,9 +40,7 @@ export function collapseToDisplay(
   const collapsed = order.slice(realCount);
   const collapsedValue = collapsed.reduce((sum, index) => sum + importance[index], 0);
   rows.push({
-    label: faithfulOtherRow
-      ? `Sum of ${collapsed.length} other features`
-      : `${collapsed.length} other features`,
+    label: labels.otherFeatures(collapsed.length, faithfulOtherRow ? "sum" : "count"),
     featureIndex: null,
     value: collapsedValue,
     isOtherRow: true,

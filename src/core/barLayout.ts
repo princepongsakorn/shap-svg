@@ -1,4 +1,5 @@
 import { DisplayRows } from "./types";
+import { PlotLabels, shapLabels } from "./labels";
 import {
   AXIS_TITLE_DY,
   AxisSpine,
@@ -29,6 +30,8 @@ export type BarLayoutOptions = {
   marginLeft: number;
   marginRight: number;
   marginTop: number;
+  /** Resolved wording; SHAP's when omitted. */
+  labels?: PlotLabels;
 };
 
 export type BarGeometry = {
@@ -75,15 +78,16 @@ function barXAxis(
   marginLeft: number,
   plotWidth: number,
   plotBottom: number,
+  title: string,
 ): Pick<BarLayout, "xTicks" | "xSpine" | "xTitle"> {
   const { ticks, step } = niceTicks(min, max, tickSpace(plotWidth, TICK_LABEL_PT));
   return {
     xTicks: ticks.map((value) => ({ value, x: toX(value), label: tickLabel(value, step) })),
     xSpine: { x1: marginLeft, x2: marginLeft + plotWidth, y: plotBottom },
     xTitle: {
-      // _bar.py:143-150 builds this from the Explanation's transform history:
-      // "SHAP value" -> "|SHAP value|" -> "mean(|SHAP value|)".
-      text: "mean(|SHAP value|)",
+      // _bar.py:143-150 builds the default from the Explanation's transform
+      // history: "SHAP value" -> "|SHAP value|" -> "mean(|SHAP value|)".
+      text: title,
       x: marginLeft + plotWidth / 2,
       y: plotBottom + AXIS_TITLE_DY,
       fontSize: TITLE_PT,
@@ -144,7 +148,15 @@ export function barLayout(rows: DisplayRows, opts: BarLayoutOptions): BarLayout 
     xZero,
     plotWidth,
     plotBottom: marginTop + rows.rows.length * rowHeight,
-    ...barXAxis(min, max, toX, marginLeft, plotWidth, marginTop + rows.rows.length * rowHeight),
+    ...barXAxis(
+      min,
+      max,
+      toX,
+      marginLeft,
+      plotWidth,
+      marginTop + rows.rows.length * rowHeight,
+      (opts.labels ?? shapLabels).meanAbsShapValue,
+    ),
     zeroLine: { x: xZero, y1: marginTop, y2: marginTop + rows.rows.length * rowHeight },
     height: marginTop + rows.rows.length * rowHeight + AXIS_HEIGHT,
   };

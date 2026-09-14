@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { formatShapValue } from "../core/format";
 import { XAxis } from "./XAxis";
 import { ColorBar } from "./ColorBar";
+import { PlotLabels, resolveLabels } from "../core/labels";
 import { heatmapLayout, heatmapRows } from "../core/heatmapLayout";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
@@ -21,6 +22,12 @@ export type ShapHeatmapProps = {
   rowHeight?: number;
   /** SHAP's colour bar for the SHAP value range, as _heatmap.py always draws it. */
   colorBar?: boolean;
+  /**
+   * Wording for every piece of text the chart draws; keys not given keep SHAP's.
+   * Pass a stable object (a module constant or a memo): a new one each render
+   * recomputes the layout each render.
+   */
+  labels?: Partial<PlotLabels>;
   onFeatureClick?: (featureIndex: number | null) => void;
   onSampleClick?: (sampleId: string) => void;
 };
@@ -35,16 +42,18 @@ export function ShapHeatmap({
   width = 720,
   rowHeight = 26,
   colorBar = true,
+  labels,
   onFeatureClick,
   onSampleClick,
 }: ShapHeatmapProps) {
   const [hoveredColumn, setHoveredColumn] = useState<number | null>(null);
+  const words = useMemo(() => resolveLabels(labels), [labels]);
   const marginTop = 72;
 
   const layout = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
-    const rows = heatmapRows(parsed, maxDisplay, faithfulOtherRow, rowSort);
+    const rows = heatmapRows(parsed, maxDisplay, faithfulOtherRow, rowSort, words);
     return heatmapLayout(rows, {
       width,
       rowHeight,
@@ -52,8 +61,9 @@ export function ShapHeatmap({
       marginRight: 100,
       marginTop,
       colorBar,
+      labels: words,
     });
-  }, [groupByGenus, rowSort, colorBar, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight]);
+  }, [groupByGenus, rowSort, colorBar, words, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight]);
 
   const activeColumn = hoveredColumn === null ? undefined : layout.columns[hoveredColumn];
 
@@ -61,7 +71,7 @@ export function ShapHeatmap({
   // onSampleClick hands back — and is never shown: an old payload without
   // labels reads "Sample n" rather than a UUID.
   const nameOf = (column: { sampleIndex: number; sampleLabel?: string }) => {
-    if (!column.sampleLabel) return `Sample ${column.sampleIndex + 1}`;
+    if (!column.sampleLabel) return words.sampleFallback(column.sampleIndex + 1);
     return layout.sampleLabelColumn
       ? `${layout.sampleLabelColumn}: ${column.sampleLabel}`
       : column.sampleLabel;
@@ -207,7 +217,7 @@ export function ShapHeatmap({
           width={column.width}
           height={layout.plotBottom - 8}
           fill="transparent"
-          aria-label={`${nameOf(column)}, total SHAP value ${formatShapValue(column.total)}`}
+          aria-label={`${nameOf(column)}, total ${words.shapValue} ${formatShapValue(column.total)}`}
           onMouseEnter={() => setHoveredColumn(columnIndex)}
           onMouseLeave={() => setHoveredColumn(null)}
           onClick={() => {
@@ -224,7 +234,7 @@ export function ShapHeatmap({
             {nameOf(activeColumn)}
           </text>
           <text x={7} y={31} fontSize={11} fill="#222222">
-            {`Σφ: ${formatShapValue(activeColumn.total)}`}
+            {`${words.sampleTotal}: ${formatShapValue(activeColumn.total)}`}
           </text>
         </g>
       )}

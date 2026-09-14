@@ -1,4 +1,5 @@
 import { collapseToDisplay } from "./collapse";
+import { PlotLabels, shapLabels } from "./labels";
 import {
   ColorBarGeometry,
   ColorBarSpec,
@@ -26,12 +27,14 @@ const NBINS = 100;
 /** Room below the rows for ticks, their labels and the axis title. */
 const AXIS_HEIGHT = 52;
 /** fig.colorbar(m, ax=ax, ticks=[0, 1], aspect=80) with Low/High labels, _beeswarm.py:479-483. */
-const COLOR_BAR: ColorBarSpec = {
-  colormap: "red_blue",
-  tickLabels: ["Low", "High"],
-  label: "Feature value",
-  labelPad: 0,
-};
+function colorBarSpec(labels: PlotLabels): ColorBarSpec {
+  return {
+    colormap: "red_blue",
+    tickLabels: [labels.featureValueLow, labels.featureValueHigh],
+    label: labels.featureValue,
+    labelPad: 0,
+  };
+}
 /**
  * fig.colorbar's defaults, pad=0.05 and fraction=0.15, are fractions of the axes
  * before the bar is taken out of it: the gap is 0.05 of that and the plot keeps 0.80.
@@ -83,6 +86,8 @@ export type BeeswarmLayoutOptions = {
   dotRadius: number;
   /** Draw SHAP's feature value colour bar right of the plot. */
   colorBar?: boolean;
+  /** Resolved wording; SHAP's when omitted. */
+  labels?: PlotLabels;
 };
 
 export type BeeswarmPointGeometry = Omit<BeeswarmPoint, "x" | "y"> & {
@@ -196,6 +201,7 @@ export function beeswarmRows(
   faithfulOtherRow: boolean,
   seed = 0,
   rowSort: RowSort = "importance",
+  labels: PlotLabels = shapLabels,
 ): BeeswarmRows {
   if (!Number.isInteger(maxDisplay) || maxDisplay <= 0) {
     throw new RangeError(`maxDisplay must be a positive integer, received ${maxDisplay}`);
@@ -214,6 +220,7 @@ export function beeswarmRows(
       order,
       maxDisplay,
       faithfulOtherRow,
+      labels,
     ),
     rowSort,
     explanation.data,
@@ -285,14 +292,15 @@ function beeswarmXAxis(
   marginLeft: number,
   plotWidth: number,
   plotBottom: number,
+  title: string,
 ): Pick<BeeswarmLayout, "xTicks" | "xSpine" | "xTitle"> {
   const { ticks, step } = niceTicks(min, max, tickSpace(plotWidth, TICK_LABEL_PT));
   return {
     xTicks: ticks.map((value) => ({ value, x: toX(value), label: tickLabel(value, step) })),
     xSpine: { x1: marginLeft, x2: marginLeft + plotWidth, y: plotBottom },
     xTitle: {
-      // _labels.py:5, labels["VALUE"].
-      text: "SHAP value (impact on model output)",
+      // The default is _labels.py:5, labels["VALUE"].
+      text: title,
       x: marginLeft + plotWidth / 2,
       y: plotBottom + AXIS_TITLE_DY,
       fontSize: TITLE_PT,
@@ -306,6 +314,8 @@ export function beeswarmLayout(
   opts: BeeswarmLayoutOptions,
 ): BeeswarmLayout {
   const { width, rowHeight, marginLeft, marginRight, marginTop, dotRadius } = opts;
+  const labels = opts.labels ?? shapLabels;
+  const colorBar = colorBarSpec(labels);
   const plotBottom = marginTop + valueRows.rows.length * rowHeight;
   const fit = opts.colorBar
     ? fitColorBar({
@@ -313,7 +323,7 @@ export function beeswarmLayout(
         available: marginRight,
         gapRatio: COLOR_BAR_GAP_RATIO,
         minGap: 0,
-        extent: colorBarExtent(plotBottom - marginTop, COLOR_BAR),
+        extent: colorBarExtent(plotBottom - marginTop, colorBar),
       })
     : null;
   const plotWidth = fit ? fit.plotWidth : width - marginLeft - marginRight;
@@ -350,11 +360,11 @@ export function beeswarmLayout(
     rows,
     xDomain: [min, max],
     xZero: toX(0),
-    ...beeswarmXAxis(min, max, toX, marginLeft, plotWidth, plotBottom),
+    ...beeswarmXAxis(min, max, toX, marginLeft, plotWidth, plotBottom, labels.shapValueAxis),
     plotWidth,
     plotBottom,
     colorBar: fit
-      ? colorBarLayout(COLOR_BAR, {
+      ? colorBarLayout(colorBar, {
           x: marginLeft + plotWidth + fit.gap,
           y1: marginTop,
           y2: plotBottom,

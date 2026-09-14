@@ -3,6 +3,7 @@ import { Explanation } from "../core/types";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { ValuePrecision } from "../core/format";
+import { PlotLabels, resolveLabels } from "../core/labels";
 import {
   WATERFALL_BASE_LABEL_DY,
   WATERFALL_TICK_LABEL_DY,
@@ -22,6 +23,12 @@ export type ShapWaterfallProps = {
   rowHeight?: number;
   /** Decimal places for the bar labels. Display only — it changes no geometry but the text width. */
   decimals?: ValuePrecision;
+  /**
+   * Wording for every piece of text the chart draws; keys not given keep SHAP's.
+   * Pass a stable object (a module constant or a memo): a new one each render
+   * recomputes the layout each render.
+   */
+  labels?: Partial<PlotLabels>;
   onFeatureClick?: (featureIndex: number | null) => void;
 };
 
@@ -35,15 +42,17 @@ export function ShapWaterfall({
   width = 720,
   rowHeight = 30,
   decimals = 2,
+  labels,
   onFeatureClick,
 }: ShapWaterfallProps) {
   const [hovered, setHovered] = useState<number | null>(null);
+  const words = useMemo(() => resolveLabels(labels), [labels]);
   const marginTop = 34;
 
   const layout = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
-    const rows = waterfallRows(parsed, sampleIndex, maxDisplay, faithfulOtherRow);
+    const rows = waterfallRows(parsed, sampleIndex, maxDisplay, faithfulOtherRow, words);
     return waterfallLayout(rows, {
       width,
       rowHeight,
@@ -51,10 +60,11 @@ export function ShapWaterfall({
       marginRight: 110,
       marginTop,
       decimals,
+      labels: words,
     });
   }, [groupByGenus, 
     explanation, sampleIndex, maxDisplay, faithfulOtherRow,
-    classIndex, width, rowHeight, decimals,
+    classIndex, width, rowHeight, decimals, words,
   ]);
 
   return (

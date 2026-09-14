@@ -3,6 +3,7 @@ import { formatFeatureLabel, formatLevel, formatShapValue, ValuePrecision } from
 import { niceTicks, tickLabel, tickSpace } from "./ticks";
 import { orderFeatures } from "./order";
 import { ParsedExplanation } from "./types";
+import { PlotLabels, shapLabels } from "./labels";
 
 /** Fixed on-screen arrowhead length; matplotlib's equivalent is 0.08 inches. */
 export const WATERFALL_HEAD_LENGTH_PX = 8;
@@ -46,6 +47,8 @@ export type WaterfallLayoutOptions = {
   marginTop: number;
   /** Decimal places for the bar labels. Display only; omit for 3 significant figures. */
   decimals?: ValuePrecision;
+  /** Resolved wording; SHAP's when omitted. */
+  labels?: PlotLabels;
 };
 
 export type Point = { x: number; y: number };
@@ -191,6 +194,7 @@ export function waterfallRows(
   sampleIndex: number,
   maxDisplay: number,
   faithfulOtherRow: boolean,
+  labels: PlotLabels = shapLabels,
 ): WaterfallRows {
   if (!Number.isInteger(sampleIndex) || sampleIndex < 0 || sampleIndex >= explanation.nSamples) {
     throw new RangeError(
@@ -232,7 +236,8 @@ export function waterfallRows(
   if (hasOtherRow) {
     const value = collapsed.reduce((sum, featureIndex) => sum + values[featureIndex], 0);
     rows.push({
-      label: `${collapsed.length} other features`,
+      // SHAP's waterfall counts the hidden Features whatever the collapse mode.
+      label: labels.otherFeatures(collapsed.length, "count"),
       featureIndex: null,
       isOtherRow: true,
       value,
@@ -256,6 +261,7 @@ export function waterfallLayout(
   opts: WaterfallLayoutOptions,
 ): WaterfallLayout {
   const { width, rowHeight, marginLeft, marginRight, marginTop } = opts;
+  const labels = opts.labels ?? shapLabels;
   const plotWidth = width - marginLeft - marginRight;
   const coordinates = [valueRows.baseValue, valueRows.modelOutput];
   for (const row of valueRows.rows) coordinates.push(row.left, row.left + row.width);
@@ -330,7 +336,7 @@ export function waterfallLayout(
         // got, which is the whole reason SHAP hides the left spine.
         y1: plotBottom - rowHeight,
         y2: plotBottom,
-        label: `E[f(X)] = ${formatLevel(valueRows.baseValue, opts.decimals)}`,
+        label: `${labels.baseValue} = ${formatLevel(valueRows.baseValue, opts.decimals)}`,
       },
       {
         kind: "output",
@@ -339,7 +345,7 @@ export function waterfallLayout(
         // axvline(fx, 0, 1) — the full height.
         y1: marginTop,
         y2: plotBottom,
-        label: `f(x) = ${formatLevel(valueRows.modelOutput, opts.decimals)}`,
+        label: `${labels.modelOutput} = ${formatLevel(valueRows.modelOutput, opts.decimals)}`,
       },
     ],
     separators: valueRows.rows.map((_, index) => ({

@@ -1,6 +1,7 @@
 import { MouseEvent as ReactMouseEvent, useMemo, useState } from "react";
 import { beeswarmLayout, beeswarmRows } from "../core/beeswarmLayout";
-import { formatShapValue } from "../core/format";
+import { formatLevel, formatShapValue } from "../core/format";
+import { PlotLabels, resolveLabels } from "../core/labels";
 import { ColorBar } from "./ColorBar";
 import { XAxis } from "./XAxis";
 import { parseExplanation } from "../core/parse";
@@ -23,6 +24,12 @@ export type ShapBeeswarmProps = {
   dotRadius?: number;
   /** SHAP's Low–High feature value colour bar, as color_bar=True draws it. */
   colorBar?: boolean;
+  /**
+   * Wording for every piece of text the chart draws; keys not given keep SHAP's.
+   * Pass a stable object (a module constant or a memo): a new one each render
+   * recomputes the layout each render.
+   */
+  labels?: Partial<PlotLabels>;
   onFeatureClick?: (featureIndex: number | null) => void;
 };
 
@@ -40,15 +47,17 @@ export function ShapBeeswarm({
   seed = 0,
   dotRadius = 3,
   colorBar = true,
+  labels,
   onFeatureClick,
 }: ShapBeeswarmProps) {
   const [hovered, setHovered] = useState<HoveredPoint | null>(null);
+  const words = useMemo(() => resolveLabels(labels), [labels]);
   const marginTop = 8;
 
   const layout = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
-    const rows = beeswarmRows(parsed, maxDisplay, faithfulOtherRow, seed, rowSort);
+    const rows = beeswarmRows(parsed, maxDisplay, faithfulOtherRow, seed, rowSort, words);
     return beeswarmLayout(rows, {
       width,
       rowHeight,
@@ -57,8 +66,9 @@ export function ShapBeeswarm({
       marginTop,
       dotRadius,
       colorBar,
+      labels: words,
     });
-  }, [groupByGenus, rowSort, colorBar,
+  }, [groupByGenus, rowSort, colorBar, words,
     explanation,
     maxDisplay,
     faithfulOtherRow,
@@ -152,12 +162,13 @@ export function ShapBeeswarm({
           <rect x={0} y={-16} width={210} height={54} rx={3} fill="#ffffff" stroke="#cccccc" />
           <text x={7} y={0} fontSize={11} fill="#222222">{activeRow.label}</text>
           <text x={7} y={15} fontSize={11} fill="#222222">
-            {`SHAP value: ${formatShapValue(activePoint.valueX)}`}
+            {`${words.shapValue}: ${formatShapValue(activePoint.valueX)}`}
           </text>
           <text x={7} y={30} fontSize={11} fill="#222222">
-            {`Feature value: ${Number.isFinite(activePoint.featureValue)
-              ? formatShapValue(activePoint.featureValue)
-              : "missing"}`}
+            {/* Unsigned: a feature value is an input, not a push in either direction. */}
+            {`${words.featureValue}: ${Number.isFinite(activePoint.featureValue)
+              ? formatLevel(activePoint.featureValue)
+              : words.missingFeatureValue}`}
           </text>
         </g>
       )}

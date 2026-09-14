@@ -1,4 +1,5 @@
 import { collapseToDisplay } from "./collapse";
+import { PlotLabels, shapLabels } from "./labels";
 import {
   ColorBarGeometry,
   ColorBarSpec,
@@ -94,6 +95,8 @@ export type HeatmapLayoutOptions = {
   marginTop: number;
   /** Draw SHAP's SHAP value colour bar right of the side bars. */
   colorBar?: boolean;
+  /** Resolved wording; SHAP's when omitted. */
+  labels?: PlotLabels;
 };
 
 export type HeatmapCellGeometry = HeatmapCell & {
@@ -195,6 +198,7 @@ export function heatmapRows(
   maxDisplay: number,
   faithfulOtherRow: boolean,
   rowSort: RowSort = "importance",
+  labels: PlotLabels = shapLabels,
 ): HeatmapRows {
   if (!Number.isInteger(maxDisplay) || maxDisplay <= 0) {
     throw new RangeError(`maxDisplay must be a positive integer, received ${maxDisplay}`);
@@ -211,6 +215,7 @@ export function heatmapRows(
       featureOrder,
       maxDisplay,
       faithfulOtherRow,
+      labels,
     ),
     rowSort,
     explanation.data,
@@ -294,6 +299,7 @@ function heatmapXAxis(
   cellWidth: number,
   plotWidth: number,
   plotBottom: number,
+  title: string,
 ): Pick<HeatmapLayout, "xTicks" | "xSpine" | "xTitle"> {
   const { ticks, step } = niceTicks(
     -0.5,
@@ -309,7 +315,7 @@ function heatmapXAxis(
     })),
     xSpine: null,
     xTitle: {
-      text: "Instances",
+      text: title,
       x: marginLeft + plotWidth / 2,
       y: plotBottom + AXIS_TITLE_DY,
       fontSize: TICK_LABEL_PT,
@@ -323,6 +329,7 @@ export function heatmapLayout(
   opts: HeatmapLayoutOptions,
 ): HeatmapLayout {
   const { width, rowHeight, marginLeft, marginRight, marginTop } = opts;
+  const labels = opts.labels ?? shapLabels;
   const plotBottom = marginTop + valueRows.rows.length * rowHeight;
   const sideBarWidth = Math.max(0, marginRight - SIDE_BAR_RIGHT_INSET - SIDE_BAR_GAP);
 
@@ -333,7 +340,7 @@ export function heatmapLayout(
     colormap: "red_white_blue",
     tickLabels: [ticks.labels[0], ticks.labels[1]],
     ...(ticks.offsetText ? { offsetText: ticks.offsetText } : {}),
-    label: "SHAP value (impact on model output)",
+    label: labels.shapValueAxis,
     labelPad: -10,
   };
   // The bar is sized against the whole axes, which includes the f(x) chart.
@@ -422,7 +429,14 @@ export function heatmapLayout(
       x1: marginLeft - Y_TICK_LENGTH,
       x2: marginLeft,
     })),
-    ...heatmapXAxis(valueRows.columns.length, marginLeft, cellWidth, plotWidth, plotBottom),
+    ...heatmapXAxis(
+      valueRows.columns.length,
+      marginLeft,
+      cellWidth,
+      plotWidth,
+      plotBottom,
+      labels.samples,
+    ),
     sampleLabelColumn: valueRows.sampleLabelColumn,
     plotWidth,
     cellWidth,

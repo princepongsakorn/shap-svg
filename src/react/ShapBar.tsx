@@ -7,6 +7,7 @@ import { collapseToDisplay } from "../core/collapse";
 import { barLayout } from "../core/barLayout";
 import { formatShapValue } from "../core/format";
 import { XAxis } from "./XAxis";
+import { PlotLabels, resolveLabels } from "../core/labels";
 
 export type ShapBarProps = {
   explanation: Explanation;
@@ -17,6 +18,12 @@ export type ShapBarProps = {
   classIndex?: number;
   width?: number;
   rowHeight?: number;
+  /**
+   * Wording for every piece of text the chart draws; keys not given keep SHAP's.
+   * Pass a stable object (a module constant or a memo): a new one each render
+   * recomputes the layout each render.
+   */
+  labels?: Partial<PlotLabels>;
   onFeatureClick?: (featureIndex: number | null) => void;
 };
 
@@ -28,9 +35,11 @@ export function ShapBar({
   classIndex = 1,
   width = 720,
   rowHeight = 26,
+  labels,
   onFeatureClick,
 }: ShapBarProps) {
   const [hovered, setHovered] = useState<number | null>(null);
+  const words = useMemo(() => resolveLabels(labels), [labels]);
 
   const layout = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
@@ -38,16 +47,16 @@ export function ShapBar({
     const importance = globalImportance(parsed);
     const order = orderFeatures(importance);
     const rows = collapseToDisplay(
-      parsed.featureNames, importance, order, maxDisplay, faithfulOtherRow,
+      parsed.featureNames, importance, order, maxDisplay, faithfulOtherRow, words,
     );
     return barLayout(rows, {
-      width, rowHeight, marginLeft: 260, marginRight: 90, marginTop: 8,
+      width, rowHeight, marginLeft: 260, marginRight: 90, marginTop: 8, labels: words,
     });
-  }, [groupByGenus, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight]);
+  }, [groupByGenus, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight, words]);
 
   return (
     <svg width={width} height={layout.height} role="img"
-         aria-label="Mean absolute SHAP value per feature">
+         aria-label={`Mean absolute ${words.shapValue} per feature`}>
       <line x1={layout.zeroLine.x} x2={layout.zeroLine.x}
             y1={layout.zeroLine.y1} y2={layout.zeroLine.y2}
             stroke="#333333" strokeWidth={1} />
