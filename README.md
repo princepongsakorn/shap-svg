@@ -1,7 +1,12 @@
 # shap-svg
 
-Interactive SVG charts for [SHAP](https://github.com/shap/shap) explanations — **bar, beeswarm,
-heatmap and waterfall** — drawn in the browser from SHAP values instead of shipped as rendered images.
+`shap-svg` is a browser rendering layer for the [`shap.plots`](https://shap.readthedocs.io/en/latest/api.html#plots)
+API. It reimplements `shap.plots.bar`, `shap.plots.beeswarm`, `shap.plots.heatmap` and
+`shap.plots.waterfall` as interactive SVG charts, exposed as React components through `shap-svg/react`,
+so web applications can present SHAP explanations without server-side matplotlib rendering.
+
+It is a rendering library only. SHAP values must still be computed with the
+[`shap`](https://github.com/shap/shap) Python package and delivered to the client as JSON.
 
 ```bash
 npm install shap-svg
