@@ -1,6 +1,6 @@
 {
   "name": "shap-svg",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Interactive SVG charts for SHAP explanations — bar, beeswarm, heatmap and waterfall — drawn in the browser from SHAP values, with a framework-free core and React components.",
   "license": "MIT",
   "author": "Pongsakorn P.",
