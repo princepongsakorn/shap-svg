@@ -7,6 +7,28 @@ heatmap and waterfall** — drawn in the browser from SHAP values instead of shi
 npm install shap-svg
 ```
 
+## In action
+
+Recorded in the
+[Explainable AI Microbiome Platform](https://github.com/princepongsakorn/explainable-ai-microbiome-platform),
+which draws its SHAP charts with `shap-svg`.
+
+### `Plots.bar`
+
+![Bar chart of mean absolute SHAP value per taxon](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/bar.gif)
+
+### `Plots.beeswarm`
+
+![Beeswarm chart with one dot per sample per taxon, coloured by relative abundance](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/beeswarm.gif)
+
+### `Plots.heatmap`
+
+![Heatmap of samples by taxa coloured by SHAP value, with the model output line above](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/heatmap.gif)
+
+### `Plots.waterfall`
+
+![Waterfall chart building one sample's prediction from the average prediction](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/waterfall.gif)
+
 ## Why this exists, and why the name
 
 SHAP draws its plots with matplotlib, on the machine that computed the values. A web application
