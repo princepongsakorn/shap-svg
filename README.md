@@ -7,6 +7,18 @@ heatmap and waterfall** — drawn in the browser from SHAP values instead of shi
 npm install shap-svg
 ```
 
+## In action
+
+These recordings come from the
+[Explainable AI Microbiome Platform](https://github.com/princepongsakorn/explainable-ai-microbiome-platform),
+which draws its SHAP charts with `shap-svg`.
+
+![shap-svg charts in the Explainable AI Microbiome Platform, part 1](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/demo-1.gif)
+
+![shap-svg charts in the Explainable AI Microbiome Platform, part 2](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/demo-2.gif)
+
+![shap-svg charts in the Explainable AI Microbiome Platform, part 3](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/demo-3.gif)
+
 ## Why this exists, and why the name
 
 SHAP draws its plots with matplotlib, on the machine that computed the values. A web application
