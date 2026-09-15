@@ -9,15 +9,25 @@ npm install shap-svg
 
 ## In action
 
-These recordings come from the
+Recorded in the
 [Explainable AI Microbiome Platform](https://github.com/princepongsakorn/explainable-ai-microbiome-platform),
 which draws its SHAP charts with `shap-svg`.
 
-![shap-svg charts in the Explainable AI Microbiome Platform, part 1](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/demo-1.gif)
+### `Plots.bar`
 
-![shap-svg charts in the Explainable AI Microbiome Platform, part 2](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/demo-2.gif)
+![Bar chart of mean absolute SHAP value per taxon](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/bar.gif)
 
-![shap-svg charts in the Explainable AI Microbiome Platform, part 3](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/demo-3.gif)
+### `Plots.beeswarm`
+
+![Beeswarm chart with one dot per sample per taxon, coloured by relative abundance](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/beeswarm.gif)
+
+### `Plots.heatmap`
+
+![Heatmap of samples by taxa coloured by SHAP value, with the model output line above](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/heatmap.gif)
+
+### `Plots.waterfall`
+
+![Waterfall chart building one sample's prediction from the average prediction](https://raw.githubusercontent.com/princepongsakorn/shap-svg/main/docs/assets/waterfall.gif)
 
 ## Why this exists, and why the name
 
