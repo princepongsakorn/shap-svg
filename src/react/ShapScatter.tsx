@@ -17,7 +17,12 @@ import { placeTooltip } from "../core/tooltip";
 const MARGIN = { right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
 const ABSENT_BAND = 56;
-const ABSENT_GAP = 18;
+/**
+ * Space between the Absent band and the log axis. Wide enough that the band's
+ * tick and the first abundance tick cannot touch: the band's label is centred
+ * on a 56px band, so a narrower gap puts the two strings a pixel apart.
+ */
+const ABSENT_GAP = 40;
 /** Average advance of one glyph of the 11px axis text. Estimated, never measured. */
 const AXIS_CHAR_PX = 5.6;
 const DOT_RADIUS = 4;
