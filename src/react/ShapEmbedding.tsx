@@ -5,6 +5,8 @@ import { groupExplanationByGenus } from "../core/taxonomy";
 import { embeddingLayout } from "../core/embeddingLayout";
 import { ColormapName } from "../core/colormap";
 import { PlotLabels, resolveLabels } from "../core/labels";
+import { embeddingTableRows } from "../core/tableRows";
+import { ChartTable } from "./ChartTable";
 
 const DOT_RADIUS = 4;
 
@@ -32,26 +34,29 @@ export function ShapEmbedding({
   width = 620,
   height = 440,
   colormap = "red_blue",
+  tableView = "hidden",
   labels,
   onSampleClick,
 }: ShapEmbeddingProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const words = useMemo(() => resolveLabels(labels), [labels]);
 
-  const layout = useMemo(() => {
+  const { layout, table } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
     const resolvedColorBy =
       typeof colorBy === "string" && colorBy !== "sum" && colorBy !== "none"
         ? parsed.featureNames.indexOf(colorBy)
         : (colorBy as "sum" | "none" | number);
-    return embeddingLayout({
+    const layout = embeddingLayout({
       parsed, width, height, colorBy: resolvedColorBy, coords, colormap, labels: words,
     });
+    return { layout, table: embeddingTableRows(layout, parsed, words) };
   }, [explanation, colorBy, coords, groupByGenus, classIndex, width, height, colormap, words]);
 
   return (
-    <svg width={width} height={height} role="img" aria-label={`${layout.xTitle}, ${layout.yTitle}`}>
+    <>
+      <svg width={width} height={height} role="img" aria-label={`${layout.xTitle}, ${layout.yTitle}`}>
       {layout.points.map((p) => (
         <circle
           key={`sample-${p.sampleIndex}`}
@@ -72,6 +77,8 @@ export function ShapEmbedding({
             transform={`rotate(-90 16 ${(layout.plotTop + layout.plotBottom) / 2})`}>
         {layout.yTitle}
       </text>
-    </svg>
+      </svg>
+      <ChartTable data={table} view={tableView} />
+    </>
   );
 }

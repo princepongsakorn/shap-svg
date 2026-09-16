@@ -5,6 +5,8 @@ import { groupExplanationByGenus } from "../core/taxonomy";
 import { forceLayout } from "../core/forceLayout";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
+import { forceTableRows } from "../core/tableRows";
+import { ChartTable } from "./ChartTable";
 
 export type ShapForceProps = {
   explanation: Explanation;
@@ -28,22 +30,25 @@ export function ShapForce({
   classIndex = 1,
   width = 720,
   height = 96,
+  tableView = "hidden",
   labels,
 }: ShapForceProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const words = useMemo(() => resolveLabels(labels), [labels]);
 
-  const layout = useMemo(() => {
+  const { layout, table } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
-    return forceLayout({
+    const layout = forceLayout({
       parsed, sampleIndex, width, height, maxDisplay, faithfulOtherRow, labels: words,
     });
+    return { layout, table: forceTableRows(layout, words) };
   }, [explanation, sampleIndex, maxDisplay, faithfulOtherRow, groupByGenus, classIndex,
       width, height, words]);
 
   return (
-    <svg width={width} height={height} role="img"
+    <>
+      <svg width={width} height={height} role="img"
          aria-label={`${words.modelOutput} ${formatLevel(layout.modelOutput)} for ${
            words.sampleFallback(sampleIndex + 1)
          }`}>
@@ -82,6 +87,8 @@ export function ShapForce({
       {hovered !== null && (
         <title>{formatShapValue(layout.segments[hovered].value)}</title>
       )}
-    </svg>
+      </svg>
+      <ChartTable data={table} view={tableView} />
+    </>
   );
 }

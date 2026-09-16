@@ -6,6 +6,8 @@ import { decisionLayout } from "../core/decisionLayout";
 import { ColormapName } from "../core/colormap";
 import { formatFeatureLabel, formatLevel } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
+import { decisionTableRows } from "../core/tableRows";
+import { ChartTable } from "./ChartTable";
 
 export type ShapDecisionProps = {
   explanation: Explanation;
@@ -30,20 +32,24 @@ export function ShapDecision({
   width = 720,
   rowHeight = 26,
   colormap = "red_blue",
+  tableView = "hidden",
   labels,
   onSampleClick,
 }: ShapDecisionProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const words = useMemo(() => resolveLabels(labels), [labels]);
 
-  const layout = useMemo(() => {
+  const { layout, table } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
-    return decisionLayout({ parsed, width, rowHeight, maxDisplay, sampleIndices, colormap });
-  }, [explanation, maxDisplay, sampleIndices, groupByGenus, classIndex, width, rowHeight, colormap]);
+    const layout = decisionLayout({ parsed, width, rowHeight, maxDisplay, sampleIndices, colormap });
+    return { layout, table: decisionTableRows(layout, parsed, words) };
+  }, [explanation, maxDisplay, sampleIndices, groupByGenus, classIndex, width, rowHeight, colormap,
+      words]);
 
   return (
-    <svg width={width} height={layout.height} role="img"
+    <>
+      <svg width={width} height={layout.height} role="img"
          aria-label={`${words.cumulativeShapValue} per Sample across features`}>
       <line x1={layout.baseValueX} x2={layout.baseValueX}
             y1={layout.plotTop} y2={layout.plotBottom}
@@ -77,6 +83,8 @@ export function ShapDecision({
             textAnchor="middle" fontSize={13} fill="#333333">
         {words.cumulativeShapValue}
       </text>
-    </svg>
+      </svg>
+      <ChartTable data={table} view={tableView} />
+    </>
   );
 }

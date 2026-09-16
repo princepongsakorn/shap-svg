@@ -8,6 +8,8 @@ import { binnedMedianTrend, logDomain, scatterPoints } from "../core/scatterLayo
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { AXIS_TITLE_DY, niceTicks, tickLabel, tickSpace } from "../core/ticks";
+import { scatterTableRows } from "../core/tableRows";
+import { ChartTable } from "./ChartTable";
 
 const MARGIN = { left: 70, right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
@@ -202,13 +204,14 @@ export function ShapScatter({
   width = 640,
   height = 400,
   colormap = "red_blue",
+  tableView = "hidden",
   labels,
   onSampleClick,
 }: ShapScatterProps) {
   const [hovered, setHovered] = useState<number | null>(null);
   const words = useMemo(() => resolveLabels(labels), [labels]);
 
-  const { geometry, parsed, featureIndex } = useMemo(() => {
+  const { geometry, parsed, featureIndex, table } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const p = groupByGenus ? groupExplanationByGenus(raw) : raw;
     const indexOf = (f: string | number) =>
@@ -219,9 +222,11 @@ export function ShapScatter({
     }
     const resolvedColor =
       colorFeature === "auto" || colorFeature === "none" ? colorFeature : indexOf(colorFeature);
+    const split = scatterPoints(p, featureIndex);
     return {
       parsed: p,
       featureIndex,
+      table: scatterTableRows(p, featureIndex, split, words),
       geometry: scatterGeometry({
         parsed: p,
         featureIndex,
@@ -255,7 +260,8 @@ export function ShapScatter({
   );
 
   return (
-    <svg width={width} height={height} role="img"
+    <>
+      <svg width={width} height={height} role="img"
          aria-label={`${words.shapValue} against ${geometry.xTitle.text}`}>
       <line x1={geometry.plotLeft} x2={geometry.plotRight}
             y1={geometry.zeroRuleY} y2={geometry.zeroRuleY}
@@ -299,6 +305,8 @@ export function ShapScatter({
           {`${formatShapValue(parsed.values[hovered][featureIndex])}`}
         </title>
       )}
-    </svg>
+      </svg>
+      <ChartTable data={table} view={tableView} />
+    </>
   );
 }
