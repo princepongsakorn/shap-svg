@@ -159,12 +159,28 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
 
   // Without this the reader sees a blue-to-red gradient with nothing anywhere
   // saying what it measures, which is the one thing colour must never do.
+  const colouredTaxon =
+    typeof colorBy === "number" ? formatFeatureLabel(parsed.featureNames[colorBy]) : null;
   const colourLabel =
     colorBy === "sum"
       ? words.sampleTotal
-      : typeof colorBy === "number"
-        ? `${formatFeatureLabel(parsed.featureNames[colorBy])} · ${words.shapValue}`
+      : colouredTaxon
+        ? `${colouredTaxon} · ${words.shapValue}`
         : "";
+  // Only the taxon's name is italic, as a scientific name always is.
+  const colourParts = colouredTaxon
+    ? (() => {
+        const title = words.colorScale(colourLabel);
+        const at = title.indexOf(colouredTaxon);
+        return at < 0
+          ? undefined
+          : [
+              { text: title.slice(0, at) },
+              { text: colouredTaxon, italic: true },
+              { text: title.slice(at + colouredTaxon.length) },
+            ];
+      })()
+    : undefined;
 
   const inside = (value: number, low: number, high: number) => value > low && value < high;
 
@@ -195,6 +211,7 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
               // contributions and their sign is the thing worth reading.
               tickLabels: [formatShapValue(colourLow), formatShapValue(colourHigh)],
               label: words.colorScale(colourLabel),
+              ...(colourParts ? { labelParts: colourParts } : {}),
               labelPad: 0,
             },
             { x: plotRight + 18, y1: plotTop, y2: plotBottom },

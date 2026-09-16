@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { placeTooltip } from "../src/core/tooltip";
+import { placeTooltip, runsToText } from "../src/core/tooltip";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { ShapWaterfall } from "../src/react/ShapWaterfall";
@@ -90,31 +90,39 @@ describe("interactive chart tooltip lines", () => {
   });
   const words = resolveLabels();
 
-  it("scatter names the Sample, plotted Feature, SHAP value, and colour Feature", () => {
-    expect(scatterTooltipLines(parsed, 1, 0, 1, words)).toEqual([
+  it("scatter puts the two taxa together, then the contribution", () => {
+    // The contribution used to sit between them, which made the box read as
+    // three unrelated facts rather than a taxon, its partner, and the effect.
+    expect(scatterTooltipLines(parsed, 1, 0, 1, words).map(runsToText)).toEqual([
       "S-18",
       "Plotted feature: 0.75",
-      "SHAP value: +0.375",
       "Colour feature: 4",
+      "SHAP value: +0.375",
     ]);
   });
 
+  it("scatter italicises both taxon names and nothing else", () => {
+    const lines = scatterTooltipLines(parsed, 1, 0, 1, words);
+    const italic = lines.flat().filter((run) => run.italic).map((run) => run.text);
+    expect(italic).toEqual(["Plotted feature", "Colour feature"]);
+  });
+
   it("scatter says absent instead of zero for an undetected Sample", () => {
-    expect(scatterTooltipLines(parsed, 0, 0, 1, words)).toContain("Plotted feature: Absent");
-    expect(scatterTooltipLines(parsed, 0, 0, 1, words)).not.toContain("Plotted feature: 0");
+    expect(scatterTooltipLines(parsed, 0, 0, 1, words).map(runsToText)).toContain("Plotted feature: Absent");
+    expect(scatterTooltipLines(parsed, 0, 0, 1, words).map(runsToText)).not.toContain("Plotted feature: 0");
   });
 
   it("embedding names the Sample and the quantity used for colour", () => {
     // The box names the Sample, where its prediction landed, how far it moved
     // to get there, and the Features that moved it — a point carrying one
     // number and no reason is what this replaced.
-    const summary = embeddingTooltipLines(parsed, 0, "sum", words);
+    const summary = embeddingTooltipLines(parsed, 0, "sum", words).map(runsToText);
     expect(summary[0]).toBe("S-17");
     expect(summary[1]).toContain("f(x)");
     expect(summary[2]).toBe("Σφ: +0.125");
     expect(summary.length).toBeGreaterThan(3);
 
-    const coloured = embeddingTooltipLines(parsed, 1, 1, words);
+    const coloured = embeddingTooltipLines(parsed, 1, 1, words).map(runsToText);
     expect(coloured[0]).toBe("S-18");
     expect(coloured).toContain("Colour feature SHAP value: −0.5");
   });

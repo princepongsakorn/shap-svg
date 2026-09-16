@@ -3,6 +3,7 @@ import { parseExplanation } from "../src/core/parse";
 import { forceLayout } from "../src/core/forceLayout";
 import { forceTooltipLines } from "../src/react/ShapForce";
 import { shapLabels } from "../src/core/labels";
+import { runsToText } from "../src/core/tooltip";
 import { NEGATIVE_COLOR, POSITIVE_COLOR } from "../src/core/barLayout";
 
 const parsed = parseExplanation({
@@ -95,6 +96,11 @@ describe("what a hovered segment says", () => {
   const lines = (label: string) =>
     forceTooltipLines(
       withNames, 0, layout.segments.find((s) => s.label.startsWith(label))!, shapLabels,
+    ).map(runsToText);
+
+  const runs = (label: string) =>
+    forceTooltipLines(
+      withNames, 0, layout.segments.find((s) => s.label.startsWith(label))!, shapLabels,
     );
 
   it("names the taxon rather than leaving a bare number", () => {
@@ -112,5 +118,30 @@ describe("what a hovered segment says", () => {
 
   it("says the taxon was not detected rather than showing a zero", () => {
     expect(lines("Parvimonas")[2]).toBe(`${shapLabels.featureValue}: ${shapLabels.absent}`);
+  });
+});
+
+describe("scientific names in the hover box", () => {
+  const withNames = parseExplanation({
+    contract_version: 1,
+    values: [[0.30, -0.10, 0.01]],
+    base_values: 0.4,
+    data: [[0.002, 0, 0.5]],
+    feature_names: ["Fusobacterium_nucleatum", "Parvimonas_micra", "c"],
+  });
+  const layout = forceLayout({
+    parsed: withNames, sampleIndex: 0, width: 640, height: 110, maxDisplay: 2,
+  });
+
+  it("sets a taxon's name in italics and leaves its number upright", () => {
+    const segment = layout.segments.find((s) => s.label.startsWith("Fusobacterium"))!;
+    const [nameLine] = forceTooltipLines(withNames, 0, segment, shapLabels);
+    expect(nameLine).toEqual([{ text: "Fusobacterium nucleatum", italic: true }]);
+  });
+
+  it("leaves the Other features row upright, because it is not a taxon", () => {
+    const other = layout.segments.find((s) => s.isOtherRow)!;
+    const [nameLine] = forceTooltipLines(withNames, 0, other, shapLabels);
+    expect(nameLine.every((run) => !run.italic)).toBe(true);
   });
 });

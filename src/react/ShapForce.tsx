@@ -6,7 +6,7 @@ import { forceLayout } from "../core/forceLayout";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { forceTableRows } from "../core/tableRows";
-import { placeTooltip } from "../core/tooltip";
+import { namedValue, placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
 import { ChartTable } from "./ChartTable";
 
 /** Average advance of one glyph in the force chart's 11–12px text. */
@@ -64,14 +64,19 @@ export function forceTooltipLines(
   sampleIndex: number,
   segment: { label: string; featureIndex: number | null; isOtherRow: boolean; value: number },
   words: PlotLabels,
-): string[] {
-  const lines = [
-    segment.isOtherRow ? segment.label : formatFeatureLabel(segment.label),
-    `${words.shapValue}: ${formatShapValue(segment.value)}`,
+): TooltipRun[][] {
+  // The Other features row is a count, not a taxon, so it stays upright.
+  const lines: TooltipRun[][] = [
+    segment.isOtherRow
+      ? [{ text: segment.label }]
+      : [{ text: formatFeatureLabel(segment.label), italic: true }],
+    [{ text: `${words.shapValue}: ${formatShapValue(segment.value)}` }],
   ];
   if (segment.featureIndex !== null) {
     const value = parsed.data[sampleIndex][segment.featureIndex];
-    lines.push(`${words.featureValue}: ${value > 0 ? formatLevel(value) : words.absent}`);
+    lines.push([
+      { text: `${words.featureValue}: ${value > 0 ? formatLevel(value) : words.absent}` },
+    ]);
   }
   return lines;
 }
@@ -121,12 +126,14 @@ export function ShapForce({
   const baseValueX = clampTextX(layout.baseValueX, words.baseValue, "middle", width);
 
   const active = hovered === null ? null : layout.segments[hovered] ?? null;
-  const tooltipLines = active ? forceTooltipLines(parsed, sampleIndex, active, words) : [];
+  const tooltipLines: TooltipRun[][] = active
+    ? forceTooltipLines(parsed, sampleIndex, active, words)
+    : [];
   const tooltip = active
     ? placeTooltip({
         anchorX: active.x + active.width / 2,
         anchorY: layout.barY + layout.barHeight / 2,
-        lines: tooltipLines,
+        lines: tooltipLines.map(runsToText),
         lineHeight: TOOLTIP_LINE_HEIGHT,
         minWidth: 120,
         chartWidth: width,
@@ -192,7 +199,11 @@ export function ShapForce({
           {tooltipLines.map((line, index) => (
             <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
                   fontSize={11} fill="#222222">
-              {line}
+              {line.map((run, runIndex) => (
+                <tspan key={`run-${runIndex}`} fontStyle={run.italic ? "italic" : undefined}>
+                  {run.text}
+                </tspan>
+              ))}
             </text>
           ))}
         </g>

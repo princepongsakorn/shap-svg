@@ -12,7 +12,7 @@ import { scatterTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
 import { colorBarLayout, ColorBarGeometry } from "../core/colorBar";
 import { ColorBar } from "./ColorBar";
-import { placeTooltip } from "../core/tooltip";
+import { namedValue, placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
 
 const MARGIN = { right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
@@ -86,22 +86,28 @@ export function scatterTooltipLines(
   featureIndex: number,
   colorFeatureIndex: number | null,
   words: PlotLabels,
-): string[] {
-  const featureValue = parsed.data[sampleIndex][featureIndex];
-  const lines = [
-    sampleName(parsed, sampleIndex, words),
-    `${formatFeatureLabel(parsed.featureNames[featureIndex])}: ${
-      featureValue > 0 ? formatLevel(featureValue) : words.absent
-    }`,
-    `${words.shapValue}: ${formatShapValue(parsed.values[sampleIndex][featureIndex])}`,
-  ];
-  if (colorFeatureIndex !== null) {
-    lines.push(
-      `${formatFeatureLabel(parsed.featureNames[colorFeatureIndex])}: ${
-        formatLevel(parsed.data[sampleIndex][colorFeatureIndex])
-      }`,
+): TooltipRun[][] {
+  const abundance = (index: number): TooltipRun[] => {
+    const value = parsed.data[sampleIndex][index];
+    return namedValue(
+      formatFeatureLabel(parsed.featureNames[index]),
+      value > 0 ? formatLevel(value) : words.absent,
     );
-  }
+  };
+
+  // The two taxa sit together. With the contribution between them the box read
+  // as three unrelated facts; adjacent, the second line is plainly the taxon
+  // being asked about and the third the one its colour encodes.
+  const lines: TooltipRun[][] = [
+    [{ text: sampleName(parsed, sampleIndex, words) }],
+    abundance(featureIndex),
+  ];
+  if (colorFeatureIndex !== null) lines.push(abundance(colorFeatureIndex));
+  lines.push([
+    {
+      text: `${words.shapValue}: ${formatShapValue(parsed.values[sampleIndex][featureIndex])}`,
+    },
+  ]);
   return lines;
 }
 
@@ -436,7 +442,7 @@ export function ShapScatter({
     ? placeTooltip({
         anchorX: activePoint.cx,
         anchorY: activePoint.cy,
-        lines: tooltipLines,
+        lines: tooltipLines.map(runsToText),
         lineHeight: TOOLTIP_LINE_HEIGHT,
         minWidth: 160,
         chartWidth: width,
@@ -534,7 +540,11 @@ export function ShapScatter({
           {tooltipLines.map((line, index) => (
             <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
                   fontSize={11} fill="#222222">
-              {line}
+              {line.map((run, runIndex) => (
+                <tspan key={`run-${runIndex}`} fontStyle={run.italic ? "italic" : undefined}>
+                  {run.text}
+                </tspan>
+              ))}
             </text>
           ))}
         </g>

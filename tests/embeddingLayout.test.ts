@@ -3,6 +3,7 @@ import { parseExplanation } from "../src/core/parse";
 import { embeddingLayout } from "../src/core/embeddingLayout";
 import { embeddingTooltipLines } from "../src/react/ShapEmbedding";
 import { shapLabels } from "../src/core/labels";
+import { runsToText } from "../src/core/tooltip";
 
 const parsed = parseExplanation({
   contract_version: 1,
@@ -70,7 +71,7 @@ describe("the embedding's frame and hover detail", () => {
   });
 
   it("names the Sample, where its prediction landed, and the taxa that drove it", () => {
-    const lines = embeddingTooltipLines(parsed, 0, "sum", shapLabels);
+    const lines = embeddingTooltipLines(parsed, 0, "sum", shapLabels).map(runsToText);
     expect(lines[0]).toBe("Sample 1");
     expect(lines[1]).toContain(shapLabels.modelOutput);
     expect(lines[2]).toContain(shapLabels.sampleTotal);
@@ -81,7 +82,7 @@ describe("the embedding's frame and hover detail", () => {
 
   it("orders the named taxa by the size of their contribution", () => {
     const lines = embeddingTooltipLines(parsed, 0, "sum", shapLabels);
-    const named = lines.slice(3).map((line) => line.trim().split(" ")[0]);
+    const named = lines.slice(3).map((line) => runsToText(line).trim().split(" ")[0]);
     expect(named[0]).toBe("a");
   });
 });

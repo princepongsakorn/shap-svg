@@ -9,7 +9,7 @@ import { PlotLabels, resolveLabels } from "../core/labels";
 import { embeddingTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
-import { placeTooltip } from "../core/tooltip";
+import { namedValue, placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
 
 const DOT_RADIUS = 4;
 const TOOLTIP_LINE_HEIGHT = 15;
@@ -21,22 +21,22 @@ export function embeddingTooltipLines(
   sampleIndex: number,
   colorBy: "sum" | "none" | number,
   words: PlotLabels,
-): string[] {
+): TooltipRun[][] {
   const row = parsed.values[sampleIndex];
   const sum = row.reduce((total, value) => total + value, 0);
-  const lines = [parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1)];
-
-  // Where this Sample's prediction landed, which is what a reader is actually
-  // after; Σφ alone is the distance travelled, not the destination.
-  lines.push(`${words.modelOutput}: ${formatLevel(parsed.baseValues[sampleIndex] + sum)}`);
-  lines.push(`${words.sampleTotal}: ${formatShapValue(sum)}`);
+  const lines: TooltipRun[][] = [
+    [{ text: parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1) }],
+    // Where this Sample's prediction landed, which is what a reader is actually
+    // after; Σφ alone is the distance travelled, not the destination.
+    [{ text: `${words.modelOutput}: ${formatLevel(parsed.baseValues[sampleIndex] + sum)}` }],
+    [{ text: `${words.sampleTotal}: ${formatShapValue(sum)}` }],
+  ];
 
   if (typeof colorBy === "number") {
-    lines.push(
-      `${formatFeatureLabel(parsed.featureNames[colorBy])} ${words.shapValue}: ${
-        formatShapValue(row[colorBy])
-      }`,
-    );
+    lines.push([
+      { text: formatFeatureLabel(parsed.featureNames[colorBy]), italic: true },
+      { text: ` ${words.shapValue}: ${formatShapValue(row[colorBy])}` },
+    ]);
   }
 
   // The Features that put this Sample where it is. Without them a point on this
@@ -46,7 +46,11 @@ export function embeddingTooltipLines(
     .sort((a, b) => Math.abs(b.value) - Math.abs(a.value) || a.index - b.index)
     .slice(0, TOOLTIP_TOP_FEATURES);
   for (const { value, index } of strongest) {
-    lines.push(`  ${formatFeatureLabel(parsed.featureNames[index])} ${formatShapValue(value)}`);
+    lines.push([
+      { text: "  " },
+      { text: formatFeatureLabel(parsed.featureNames[index]), italic: true },
+      { text: ` ${formatShapValue(value)}` },
+    ]);
   }
   return lines;
 }
@@ -106,7 +110,8 @@ export function ShapEmbedding({
     : embeddingTooltipLines(parsed, hovered, resolvedColorBy, words);
   const tooltip = activePoint
     ? placeTooltip({
-        anchorX: activePoint.cx, anchorY: activePoint.cy, lines: tooltipLines,
+        anchorX: activePoint.cx, anchorY: activePoint.cy,
+        lines: tooltipLines.map(runsToText),
         lineHeight: TOOLTIP_LINE_HEIGHT, minWidth: 160, chartWidth: width, chartHeight: height,
       })
     : null;
@@ -184,7 +189,13 @@ export function ShapEmbedding({
                 fill="#ffffff" stroke="#cccccc" />
           {tooltipLines.map((line, index) => (
             <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
-                  fontSize={11} fill="#222222">{line}</text>
+                  fontSize={11} fill="#222222">
+              {line.map((run, runIndex) => (
+                <tspan key={`run-${runIndex}`} fontStyle={run.italic ? "italic" : undefined}>
+                  {run.text}
+                </tspan>
+              ))}
+            </text>
           ))}
         </g>
       )}

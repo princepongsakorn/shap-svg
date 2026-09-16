@@ -32,7 +32,13 @@ describe("scatterTableRows", () => {
 
   it("names its columns", () => {
     const table = scatterTableRows(parsed, 0, scatterPoints(parsed, 0), words);
-    expect(table.columns).toEqual(["Sample", "Fusobacterium nucleatum", "SHAP value"]);
+    // The taxon's column heading is marked italic, as a scientific name is
+    // everywhere else — a table is not an exception.
+    expect(table.columns).toEqual([
+      "Sample",
+      { text: "Fusobacterium nucleatum", italic: true },
+      "SHAP value",
+    ]);
   });
 });
 
@@ -59,5 +65,16 @@ describe("embeddingTableRows", () => {
 
     expect(embeddingTableRows(narrow, parsed, words)).toEqual(embeddingTableRows(wide, parsed, words));
     expect(embeddingTableRows(narrow, parsed, words).rows[0].slice(1)).toEqual(["−2.5", "7"]);
+  });
+});
+
+describe("scientific names in the table view", () => {
+  it("marks a taxon's name italic and leaves plain words alone", () => {
+    const layout = forceLayout({ parsed, sampleIndex: 0, width: 400, height: 90, maxDisplay: 1 });
+    const table = forceTableRows(layout, words);
+    const names = table.rows.map((row) => row[0]);
+    // One real taxon and the Other features row, which is a count, not a taxon.
+    expect(names).toContainEqual({ text: "Fusobacterium nucleatum", italic: true });
+    expect(names.some((cell) => typeof cell === "string")).toBe(true);
   });
 });

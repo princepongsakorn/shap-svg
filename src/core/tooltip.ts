@@ -33,3 +33,22 @@ export function placeTooltip(opts: {
   const y = Math.max(0, Math.min(anchorY - RAISE, chartHeight - height));
   return { x, y, width, height };
 }
+
+
+/**
+ * A run of a hover-box line.
+ *
+ * A line such as `Fusobacterium nucleatum: 1e-4` needs the taxon's name in
+ * italics and the number upright, so it cannot be one string with one style.
+ * Every chart's hover box builds lines out of these.
+ */
+export type TooltipRun = { text: string; italic?: boolean };
+
+/** The plain text of a line — for width estimates, aria text and tests. */
+export const runsToText = (runs: TooltipRun[]): string => runs.map((run) => run.text).join("");
+
+/** A taxon's name and a value, the name italic as a scientific name always is. */
+export const namedValue = (name: string, value: string): TooltipRun[] => [
+  { text: name, italic: true },
+  { text: `: ${value}` },
+];

@@ -13,7 +13,12 @@ import { PlotLabels } from "./labels";
  * trying to recover a number from a figure. Every new chart publishes the rows
  * it drew, and the React layer puts them in a real <table> beside the SVG.
  */
-export type ChartTable = { caption: string; columns: string[]; rows: string[][] };
+export type TableCell = string | { text: string; italic?: boolean };
+
+export type ChartTable = { caption: string; columns: TableCell[]; rows: TableCell[][] };
+
+/** A taxon's name, which is italic here as it is everywhere else. */
+const taxon = (name: string): TableCell => ({ text: formatFeatureLabel(name), italic: true });
 
 const sampleName = (parsed: ParsedExplanation, index: number, words: PlotLabels) =>
   parsed.sampleLabels?.[index] ?? words.sampleFallback(index + 1);
@@ -24,7 +29,7 @@ export function scatterTableRows(
   split: ScatterSplit,
   words: PlotLabels,
 ): ChartTable {
-  const featureName = formatFeatureLabel(parsed.featureNames[featureIndex]);
+  const featureName = taxon(parsed.featureNames[featureIndex]);
   const rows = [...split.absent, ...split.detected]
     .sort((a, b) => a.sampleIndex - b.sampleIndex)
     .map((point) => [
@@ -62,11 +67,7 @@ export function decisionTableRows(
 ): ChartTable {
   return {
     caption: words.tableCaption,
-    columns: [
-      "Sample",
-      words.baseValue,
-      ...layout.rowLabels.map(formatFeatureLabel),
-    ],
+    columns: ["Sample", words.baseValue, ...layout.rowLabels.map(taxon)],
     rows: layout.paths.map((path) => [
       sampleName(parsed, path.sampleIndex, words),
       ...path.values.map((value) => formatLevel(value)),
@@ -79,7 +80,8 @@ export function forceTableRows(layout: ForceLayout, words: PlotLabels): ChartTab
     caption: words.tableCaption,
     columns: ["Feature", words.shapValue],
     rows: layout.segments.map((segment) => [
-      formatFeatureLabel(segment.label),
+      // The Other features row is a count, not a taxon, so it stays upright.
+      segment.isOtherRow ? segment.label : taxon(segment.label),
       formatShapValue(segment.value),
     ]),
   };
