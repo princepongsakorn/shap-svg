@@ -5,6 +5,7 @@ import { ShapWaterfall, type ShapWaterfallProps } from "./src/react/ShapWaterfal
 import { ShapScatter, type ShapScatterProps } from "./src/react/ShapScatter";
 import { ShapEmbedding, type ShapEmbeddingProps } from "./src/react/ShapEmbedding";
 import { ShapDecision, type ShapDecisionProps } from "./src/react/ShapDecision";
+import { ShapForce, type ShapForceProps } from "./src/react/ShapForce";
 
 /** Give a chart the name it is written as, so React DevTools shows `Plots.bar`. */
 function named<T extends object>(component: T, displayName: string): T & { displayName: string } {
@@ -27,6 +28,7 @@ export const Plots = {
   scatter: named(ShapScatter, "Plots.scatter"),
   embedding: named(ShapEmbedding, "Plots.embedding"),
   decision: named(ShapDecision, "Plots.decision"),
+  force: named(ShapForce, "Plots.force"),
 } as const;
 
 export type BarPlotProps = ShapBarProps;
@@ -36,3 +38,4 @@ export type WaterfallPlotProps = ShapWaterfallProps;
 export type ScatterPlotProps = ShapScatterProps;
 export type EmbeddingPlotProps = ShapEmbeddingProps;
 export type DecisionPlotProps = ShapDecisionProps;
+export type ForcePlotProps = ShapForceProps;
