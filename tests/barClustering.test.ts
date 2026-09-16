@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { parseExplanation } from "../src/core/parse";
 import { clusteredOrder, CLUSTERING_POOL } from "../src/core/barLayout";
 import { globalImportance, orderFeatures } from "../src/core/order";
+import { ShapBar } from "../src/react/ShapBar";
 
 /** b is a copy of a; c is unrelated and slightly more important than b. */
 const parsed = parseExplanation({
@@ -63,5 +66,21 @@ describe("clusteredOrder", () => {
     expect(() =>
       clusteredOrder({ parsed, importanceOrder, mode: [[0, 1, 0.5]], cutoff: 0.5 }),
     ).toThrow(/4/);
+  });
+});
+
+describe("ShapBar clustering", () => {
+  it("draws a pooled tree when fewer Features are displayed", () => {
+    const explanation = {
+      contract_version: 1 as const,
+      values: [Array.from({ length: 12 }, (_, j) => j + 1)],
+      base_values: 0,
+      data: [Array.from({ length: 12 }, (_, j) => j)],
+      feature_names: Array.from({ length: 12 }, (_, j) => `f${j}`),
+    };
+
+    expect(() => renderToStaticMarkup(createElement(ShapBar, {
+      explanation, clustering: "shap", maxDisplay: 5,
+    }))).not.toThrow();
   });
 });

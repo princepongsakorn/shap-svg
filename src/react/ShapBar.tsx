@@ -70,7 +70,13 @@ export function ShapBar({
       width, rowHeight, marginLeft: 260, marginRight: clustered ? 150 : 90, marginTop: 8,
       labels: words,
     });
-    return { ...base, clustered };
+    return {
+      ...base,
+      clustered: clustered && {
+        ...clustered,
+        pool: importanceOrder.slice(0, clustered.linkage.length + 1),
+      },
+    };
   }, [groupByGenus, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight,
       words, clustering, clusteringCutoff]);
 
@@ -105,9 +111,13 @@ export function ShapBar({
         </g>
       ))}
       {layout.clustered && (() => {
-        const leafPositions = layout.bars
-          .filter((bar) => bar.featureIndex !== null)
-          .map((bar) => bar.centerY);
+        const displayedPositions = new Map(
+          layout.bars
+            .filter((bar) => bar.featureIndex !== null)
+            .map((bar) => [bar.featureIndex!, bar.centerY]),
+        );
+        const leafPositions = layout.clustered.pool
+          .map((featureIndex) => displayedPositions.get(featureIndex) ?? Number.NaN);
         const segments = dendrogramCoords(leafPositions, layout.clustered.linkage)
           .filter((s) => s.xs.every((x) => Number.isFinite(x)));
         const heights = segments.flatMap((s) => s.ys);
