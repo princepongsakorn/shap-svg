@@ -53,6 +53,14 @@ export type EmbeddingLayout = {
   plotBottom: number;
   /** null when nothing is being encoded by colour. */
   colorBar: ColorBarGeometry | null;
+  /**
+   * Where each component is zero, or null when zero falls outside the drawn
+   * range. The projection is centred, so this cross is the cohort's own centre
+   * — the one position on these axes that means something, since the units
+   * themselves are arbitrary.
+   */
+  zeroX: number | null;
+  zeroY: number | null;
 };
 
 const UNCOLOURED = "#1f77b4";
@@ -123,8 +131,12 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
         ? `${formatFeatureLabel(parsed.featureNames[colorBy])} · ${words.shapValue}`
         : "";
 
+  const inside = (value: number, low: number, high: number) => value > low && value < high;
+
   return {
     points,
+    zeroX: inside(0, xLow, xHigh) ? toX(0) : null,
+    zeroY: inside(0, yLow, yHigh) ? toY(0) : null,
     xTitle: title(1),
     yTitle: title(2),
     plotLeft,

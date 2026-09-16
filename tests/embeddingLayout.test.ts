@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseExplanation } from "../src/core/parse";
 import { embeddingLayout } from "../src/core/embeddingLayout";
+import { embeddingTooltipLines } from "../src/react/ShapEmbedding";
+import { shapLabels } from "../src/core/labels";
 
 const parsed = parseExplanation({
   contract_version: 1,
@@ -49,5 +51,37 @@ describe("embeddingLayout", () => {
 
   it("rejects coordinates that do not match the Sample count", () => {
     expect(() => layout({ coords: [[0, 0]] as [number, number][] })).toThrow(/4/);
+  });
+});
+
+describe("the embedding's frame and hover detail", () => {
+  it("marks where each component is zero, since the projection is centred", () => {
+    const l = layout();
+    expect(l.zeroX).not.toBeNull();
+    expect(l.zeroY).not.toBeNull();
+    expect(l.zeroX!).toBeGreaterThan(l.plotLeft);
+    expect(l.zeroX!).toBeLessThan(l.plotRight);
+  });
+
+  it("omits a zero line that would fall outside the drawn range", () => {
+    const offCentre = layout({ coords: [[5, 5], [6, 6], [7, 7], [8, 8]] as [number, number][] });
+    expect(offCentre.zeroX).toBeNull();
+    expect(offCentre.zeroY).toBeNull();
+  });
+
+  it("names the Sample, where its prediction landed, and the taxa that drove it", () => {
+    const lines = embeddingTooltipLines(parsed, 0, "sum", shapLabels);
+    expect(lines[0]).toBe("Sample 1");
+    expect(lines[1]).toContain(shapLabels.modelOutput);
+    expect(lines[2]).toContain(shapLabels.sampleTotal);
+    // Three strongest contributions follow, strongest first.
+    expect(lines).toHaveLength(5);
+    expect(lines[3]).toContain("a");
+  });
+
+  it("orders the named taxa by the size of their contribution", () => {
+    const lines = embeddingTooltipLines(parsed, 0, "sum", shapLabels);
+    const named = lines.slice(3).map((line) => line.trim().split(" ")[0]);
+    expect(named[0]).toBe("a");
   });
 });

@@ -8,11 +8,13 @@ import { ColormapName } from "../core/colormap";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { embeddingTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
-import { formatFeatureLabel, formatShapValue } from "../core/format";
+import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { placeTooltip } from "../core/tooltip";
 
 const DOT_RADIUS = 4;
 const TOOLTIP_LINE_HEIGHT = 15;
+/** How many of a Sample's strongest contributions the hover box names. */
+const TOOLTIP_TOP_FEATURES = 3;
 
 export function embeddingTooltipLines(
   parsed: ParsedExplanation,
@@ -20,16 +22,31 @@ export function embeddingTooltipLines(
   colorBy: "sum" | "none" | number,
   words: PlotLabels,
 ): string[] {
+  const row = parsed.values[sampleIndex];
+  const sum = row.reduce((total, value) => total + value, 0);
   const lines = [parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1)];
-  if (colorBy === "sum") {
-    const sum = parsed.values[sampleIndex].reduce((total, value) => total + value, 0);
-    lines.push(`${words.sampleTotal}: ${formatShapValue(sum)}`);
-  } else if (typeof colorBy === "number") {
+
+  // Where this Sample's prediction landed, which is what a reader is actually
+  // after; Σφ alone is the distance travelled, not the destination.
+  lines.push(`${words.modelOutput}: ${formatLevel(parsed.baseValues[sampleIndex] + sum)}`);
+  lines.push(`${words.sampleTotal}: ${formatShapValue(sum)}`);
+
+  if (typeof colorBy === "number") {
     lines.push(
       `${formatFeatureLabel(parsed.featureNames[colorBy])} ${words.shapValue}: ${
-        formatShapValue(parsed.values[sampleIndex][colorBy])
+        formatShapValue(row[colorBy])
       }`,
     );
+  }
+
+  // The Features that put this Sample where it is. Without them a point on this
+  // map carries one number and no reason, which is the complaint this answers.
+  const strongest = row
+    .map((value, index) => ({ value, index }))
+    .sort((a, b) => Math.abs(b.value) - Math.abs(a.value) || a.index - b.index)
+    .slice(0, TOOLTIP_TOP_FEATURES);
+  for (const { value, index } of strongest) {
+    lines.push(`  ${formatFeatureLabel(parsed.featureNames[index])} ${formatShapValue(value)}`);
   }
   return lines;
 }
@@ -108,6 +125,20 @@ export function ShapEmbedding({
           style={{ cursor: onSampleClick ? "pointer" : "default" }}
         />
       ))}
+      <g aria-hidden="true">
+        {layout.zeroX !== null && (
+          <line x1={layout.zeroX} x2={layout.zeroX} y1={layout.plotTop} y2={layout.plotBottom}
+                stroke="#cccccc" strokeWidth={1} strokeDasharray="3 4" />
+        )}
+        {layout.zeroY !== null && (
+          <line x1={layout.plotLeft} x2={layout.plotRight} y1={layout.zeroY} y2={layout.zeroY}
+                stroke="#cccccc" strokeWidth={1} strokeDasharray="3 4" />
+        )}
+        <line data-axis-spine="left" x1={layout.plotLeft} x2={layout.plotLeft}
+              y1={layout.plotTop} y2={layout.plotBottom} stroke="#333333" strokeWidth={1} />
+        <line data-axis-spine="bottom" x1={layout.plotLeft} x2={layout.plotRight}
+              y1={layout.plotBottom} y2={layout.plotBottom} stroke="#333333" strokeWidth={1} />
+      </g>
       {layout.colorBar && <ColorBar bar={layout.colorBar} />}
       <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - 14}
             textAnchor="middle" fontSize={13} fill="#333333">
