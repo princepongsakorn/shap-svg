@@ -105,14 +105,18 @@ describe("interactive chart tooltip lines", () => {
   });
 
   it("embedding names the Sample and the quantity used for colour", () => {
-    expect(embeddingTooltipLines(parsed, 0, "sum", words)).toEqual([
-      "S-17",
-      "Σφ: +0.125",
-    ]);
-    expect(embeddingTooltipLines(parsed, 1, 1, words)).toEqual([
-      "S-18",
-      "Colour feature SHAP value: −0.5",
-    ]);
+    // The box names the Sample, where its prediction landed, how far it moved
+    // to get there, and the Features that moved it — a point carrying one
+    // number and no reason is what this replaced.
+    const summary = embeddingTooltipLines(parsed, 0, "sum", words);
+    expect(summary[0]).toBe("S-17");
+    expect(summary[1]).toContain("f(x)");
+    expect(summary[2]).toBe("Σφ: +0.125");
+    expect(summary.length).toBeGreaterThan(3);
+
+    const coloured = embeddingTooltipLines(parsed, 1, 1, words);
+    expect(coloured[0]).toBe("S-18");
+    expect(coloured).toContain("Colour feature SHAP value: −0.5");
   });
 
   it("decision names an unlabelled Sample and its Model output", () => {

@@ -66,7 +66,13 @@ export type ScatterGeometry = {
   plotRight: number;
   plotTop: number;
   plotBottom: number;
-  xTitle: { text: string; x: number; y: number };
+  /**
+   * `text` is the Feature's own name, drawn italic because it is a taxon.
+   * `unit` says what the axis measures, which the name alone does not —
+   * `shap.plots.scatter` labels this axis with the Feature name and nothing
+   * else, which reads fine for "Age" and not at all for a species.
+   */
+  xTitle: { text: string; unit: string; x: number; y: number };
   yTitle: string;
   yTitleX: number;
 };
@@ -275,6 +281,7 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     plotTop,
     plotBottom,
     xTitle: {
+      unit: words.featureValue,
       text: formatFeatureLabel(parsed.featureNames[featureIndex]),
       x: (plotLeft + plotRight) / 2,
       y: plotBottom + AXIS_TITLE_DY,
@@ -441,8 +448,9 @@ export function ShapScatter({
         </text>
       ))}
       <text x={geometry.xTitle.x} y={geometry.xTitle.y}
-            textAnchor="middle" fontSize={13} fontStyle="italic" fill="#333333">
-        {geometry.xTitle.text}
+            textAnchor="middle" fontSize={13} fill="#333333">
+        <tspan fontStyle="italic">{geometry.xTitle.text}</tspan>
+        <tspan> · {geometry.xTitle.unit}</tspan>
       </text>
       <text x={geometry.yTitleX} y={(geometry.plotTop + geometry.plotBottom) / 2}
             textAnchor="middle" fontSize={13} fill="#333333"

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Plots } from "../react";
 import { scatterGeometry } from "../src/react/ShapScatter";
 import { parseExplanation } from "../src/core/parse";
+import { resolveLabels, shapLabels } from "../src/core/labels";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ShapScatter } from "../src/react/ShapScatter";
@@ -178,5 +179,22 @@ describe("scatterGeometry", () => {
 
   it("drops the trend line when asked", () => {
     expect(geometry({ trend: false }).trendPath).toBeNull();
+  });
+});
+
+describe("the x axis says what it measures", () => {
+  it("carries the Feature's name and the quantity beside it", () => {
+    const g = geometry();
+    expect(g.xTitle.text).toBe("Fusobacterium nucleatum");
+    expect(g.xTitle.unit).toBe(shapLabels.featureValue);
+  });
+
+  it("takes the quantity's wording from the labels, so it can be translated", () => {
+    const g = scatterGeometry({
+      parsed, featureIndex: 0, width: 600, height: 360,
+      colorFeature: "none", colorFeatureMinScore: 0.2, xScale: "log", trend: false,
+      labels: resolveLabels({ featureValue: "Relative abundance" }),
+    });
+    expect(g.xTitle.unit).toBe("Relative abundance");
   });
 });
