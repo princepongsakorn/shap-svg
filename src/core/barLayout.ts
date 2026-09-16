@@ -55,7 +55,8 @@ export function clusteredOrder(input: ClusteredOrderInput): {
   linkage: number[][];
 } {
   const { parsed, importanceOrder, mode, cutoff } = input;
-  const pool = importanceOrder.slice(0, Math.min(CLUSTERING_POOL, importanceOrder.length));
+  const poolSize = Array.isArray(mode) ? mode.length + 1 : CLUSTERING_POOL;
+  const pool = importanceOrder.slice(0, Math.min(poolSize, importanceOrder.length));
 
   let linkage: number[][];
   if (Array.isArray(mode)) {

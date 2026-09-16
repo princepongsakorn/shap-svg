@@ -10,6 +10,8 @@ import { PlotLabels, resolveLabels } from "../core/labels";
 import { AXIS_TITLE_DY, niceTicks, tickLabel, tickSpace } from "../core/ticks";
 import { scatterTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
+import { colorBarLayout, ColorBarGeometry } from "../core/colorBar";
+import { ColorBar } from "./ColorBar";
 
 const MARGIN = { left: 70, right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
@@ -26,6 +28,7 @@ export type ScatterGeometryInput = {
   height: number;
   colorFeature: number | "auto" | "none";
   colorFeatureMinScore: number;
+  colorBar?: boolean;
   xScale: "log" | "linear";
   trend: boolean;
   colormap?: ColormapName;
@@ -42,7 +45,9 @@ export type ScatterGeometry = {
   zeroRuleY: number;
   trendPath: string | null;
   colorFeatureIndex: number | null;
+  colorFeatureLabel: string | null;
   colorNote: string;
+  colorBar: ColorBarGeometry | null;
   xTicks: { x: number; label: string }[];
   plotLeft: number;
   plotRight: number;
@@ -55,7 +60,7 @@ export type ScatterGeometry = {
 /** Pure geometry, exported so it can be tested without rendering. */
 export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
   const {
-    parsed, featureIndex, width, height, colorFeature, colorFeatureMinScore,
+    parsed, featureIndex, width, height, colorFeature, colorFeatureMinScore, colorBar = true,
     xScale, trend, colormap = "red_blue",
   } = input;
   const words = input.labels ?? resolveLabels();
@@ -64,7 +69,7 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
   const plotTop = MARGIN.top;
   const plotBottom = height - MARGIN.bottom;
   const plotLeft = MARGIN.left;
-  const plotRight = width - MARGIN.right;
+  const plotRight = width - (colorBar ? 90 : MARGIN.right);
   const detectedLeft = absent.length > 0 ? plotLeft + ABSENT_BAND + ABSENT_GAP : plotLeft;
 
   const shapValues = parsed.values.map((row) => row[featureIndex]);
@@ -95,7 +100,6 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     }
   } else if (typeof colorFeature === "number" && colorFeature !== featureIndex) {
     colorFeatureIndex = colorFeature;
-    colorNote = formatFeatureLabel(parsed.featureNames[colorFeature]);
   }
 
   // SHAP clips the colour scale to the 5th and 95th percentiles.
@@ -117,6 +121,17 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     const t = colorHigh === colorLow ? 0.5 : (value - colorLow) / (colorHigh - colorLow);
     return sampleColormap(colormap, t);
   };
+  const colorFeatureLabel = colorFeatureIndex === null
+    ? null
+    : formatFeatureLabel(parsed.featureNames[colorFeatureIndex]);
+  const colorBarGeometry = colorFeatureIndex === null || !colorBar
+    ? null
+    : colorBarLayout({
+        colormap,
+        tickLabels: [words.featureValueLow, words.featureValueHigh],
+        label: words.featureValue,
+        labelPad: 0,
+      }, { x: plotRight + 18, y1: plotTop, y2: plotBottom });
 
   const absentCenter = plotLeft + ABSENT_BAND / 2;
   const absentPoints: ScatterDot[] = absent.map((p, i) => ({
@@ -158,7 +173,9 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     zeroRuleY: toY(0),
     trendPath,
     colorFeatureIndex,
+    colorFeatureLabel,
     colorNote,
+    colorBar: colorBarGeometry,
     xTicks,
     plotLeft,
     plotRight,
@@ -187,6 +204,8 @@ export type ShapScatterProps = {
   width?: number;
   height?: number;
   colormap?: ColormapName;
+  /** SHAP's Low–High Feature value colour bar. */
+  colorBar?: boolean;
   tableView?: TableView;
   labels?: Partial<PlotLabels>;
   onSampleClick?: (sampleIndex: number) => void;
@@ -204,6 +223,7 @@ export function ShapScatter({
   width = 640,
   height = 400,
   colormap = "red_blue",
+  colorBar = true,
   tableView = "hidden",
   labels,
   onSampleClick,
@@ -234,13 +254,14 @@ export function ShapScatter({
         height,
         colorFeature: resolvedColor,
         colorFeatureMinScore,
+        colorBar,
         xScale,
         trend,
         colormap,
         labels: words,
       }),
     };
-  }, [explanation, feature, colorFeature, colorFeatureMinScore, xScale, trend,
+  }, [explanation, feature, colorFeature, colorFeatureMinScore, colorBar, xScale, trend,
       groupByGenus, classIndex, width, height, colormap, words]);
 
   const dot = (p: { cx: number; cy: number; color: string; sampleIndex: number }, key: string) => (
@@ -298,8 +319,13 @@ export function ShapScatter({
       </text>
       <text x={geometry.plotRight} y={geometry.plotTop + 4}
             textAnchor="end" fontSize={11} fill="#666666">
+        {geometry.colorFeatureLabel && (
+          <tspan fontStyle="italic">{geometry.colorFeatureLabel}</tspan>
+        )}
+        {geometry.colorFeatureLabel && geometry.colorNote ? " · " : ""}
         {geometry.colorNote}
       </text>
+      {geometry.colorBar && <ColorBar bar={geometry.colorBar} />}
       {hovered !== null && (
         <title>
           {`${formatShapValue(parsed.values[hovered][featureIndex])}`}

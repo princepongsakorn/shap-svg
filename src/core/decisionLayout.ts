@@ -83,7 +83,9 @@ export function decisionLayout(input: DecisionLayoutInput): DecisionLayout {
     return { sampleIndex, values };
   });
 
-  const base = parsed.baseValues[indices[0] ?? 0] ?? 0;
+  const base = indices.length === 0
+    ? 0
+    : indices.reduce((sum, sampleIndex) => sum + parsed.baseValues[sampleIndex], 0) / indices.length;
   let reach = 0;
   for (const path of paths) {
     for (const value of path.values) reach = Math.max(reach, Math.abs(value - base));

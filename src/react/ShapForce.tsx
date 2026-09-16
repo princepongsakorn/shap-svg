@@ -77,6 +77,14 @@ export function ShapForce({
             fontSize={12} fill="#333333">
         {`${words.modelOutput} ${formatLevel(layout.modelOutput)}`}
       </text>
+      <text x={layout.meetingX - 8} y={layout.barY + layout.barHeight + 16}
+            textAnchor="end" fontSize={11} fill="#666666">
+        {words.higher}
+      </text>
+      <text x={layout.meetingX + 8} y={layout.barY + layout.barHeight + 16}
+            textAnchor="start" fontSize={11} fill="#666666">
+        {words.lower}
+      </text>
       <line x1={layout.baseValueX} x2={layout.baseValueX}
             y1={layout.barY + layout.barHeight} y2={layout.barY + layout.barHeight + 8}
             stroke="#999999" strokeWidth={1} />

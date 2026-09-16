@@ -117,9 +117,8 @@ export function ShapBar({
             .map((bar) => [bar.featureIndex!, bar.centerY]),
         );
         const leafPositions = layout.clustered.pool
-          .map((featureIndex) => displayedPositions.get(featureIndex) ?? Number.NaN);
-        const segments = dendrogramCoords(leafPositions, layout.clustered.linkage)
-          .filter((s) => s.xs.every((x) => Number.isFinite(x)));
+          .map((featureIndex) => displayedPositions.get(featureIndex) ?? layout.plotBottom);
+        const segments = dendrogramCoords(leafPositions, layout.clustered.linkage);
         const heights = segments.flatMap((s) => s.ys);
         const tallest = Math.max(1e-9, ...heights);
         const treeLeft = width - 140;

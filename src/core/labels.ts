@@ -5,6 +5,8 @@
  * The defaults are SHAP 0.49.1's own wording: a chart given no labels reads the
  * way SHAP's figures do.
  */
+import { formatFixed } from "./format";
+
 export type PlotLabels = {
   /** The value itself, as the beeswarm tooltip names it. */
   shapValue: string;
@@ -30,6 +32,10 @@ export type PlotLabels = {
   baseValue: string;
   /** The waterfall's end point, f(x). */
   modelOutput: string;
+  /** Direction of positive SHAP values in the force plot. */
+  higher: string;
+  /** Direction of negative SHAP values in the force plot. */
+  lower: string;
   /**
    * The row standing in for every Feature not shown. `style` is "sum" for the
    * bar, beeswarm and heatmap row in faithfulOtherRow mode, which SHAP titles as
@@ -69,15 +75,17 @@ export const shapLabels: PlotLabels = {
   sampleFallback: (sampleNumber) => `Sample ${sampleNumber}`,
   baseValue: "E[f(X)]",
   modelOutput: "f(x)",
+  higher: "higher",
+  lower: "lower",
   otherFeatures: (count, style) =>
     style === "sum" ? `Sum of ${count} other features` : `${count} other features`,
   absent: "Absent",
   absentWithCount: (count) => `Absent (n = ${count})`,
   principalComponent: (index, varianceRatio) =>
-    `SHAP PC${index} (${Math.round(varianceRatio * 100)}% of SHAP variance)`,
+    `SHAP PC${index} (${formatFixed(varianceRatio * 100, 0)}% of SHAP variance)`,
   cumulativeShapValue: "Model output",
   clusterDistance: "Clustering cutoff",
-  interactionScore: (score) => `interaction ${score.toFixed(2)}`,
+  interactionScore: (score) => `interaction ${formatFixed(score, 2)}`,
   weakInteraction: "no strong interaction found",
   trend: "Median trend",
   tableCaption: "Chart data",

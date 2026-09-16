@@ -48,6 +48,11 @@ function pearson(a: number[], b: number[]): number {
   return cov / Math.sqrt(varA * varB);
 }
 
+function eligibleInteractionFeature(column: number[]): boolean {
+  return column.some((value) => Math.abs(value) >= 1e-8)
+    && column.some((value) => value !== column[0]);
+}
+
 export function interactionScores(
   featureIndex: number,
   values: number[][],
@@ -68,10 +73,7 @@ export function interactionScores(
   for (let j = 0; j < featureCount; j++) {
     if (j === featureIndex) continue;
     const sortedOther = order.map((i) => data[i][j]);
-    // SHAP skips a Feature that is all but zero across the batch.
-    let magnitude = 0;
-    for (const v of sortedOther) magnitude += Math.abs(v);
-    if (magnitude < 1e-8) continue;
+    if (!eligibleInteractionFeature(sortedOther)) continue;
 
     let sum = 0;
     for (let start = 0; start < sampleCount; start += window) {
@@ -95,9 +97,7 @@ export function strongestInteraction(
   scores.forEach((score, index) => {
     if (index === featureIndex) return;
     const column = data.map((row) => row[index]);
-    const hasSignal = column.some((value) => Math.abs(value) >= 1e-8);
-    const varies = column.some((value) => value !== column[0]);
-    if (hasSignal && varies && score > bestScore) {
+    if (eligibleInteractionFeature(column) && score > bestScore) {
       bestScore = score;
       best = index;
     }

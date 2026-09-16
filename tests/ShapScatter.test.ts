@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import { Plots } from "../react";
 import { scatterGeometry } from "../src/react/ShapScatter";
 import { parseExplanation } from "../src/core/parse";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { ShapScatter } from "../src/react/ShapScatter";
 
 const parsed = parseExplanation({
   contract_version: 1,
@@ -70,9 +73,39 @@ describe("scatterGeometry", () => {
   });
 
   it("names the colour Feature and its score when it is strong enough", () => {
-    const g = geometry({ colorFeatureMinScore: 0 });
+    const sampleCount = 40;
+    const strong = parseExplanation({
+      contract_version: 1,
+      values: Array.from({ length: sampleCount }, (_, i) => [i % 4, 0, 0]),
+      base_values: 0,
+      data: Array.from({ length: sampleCount }, (_, i) => [i, i % 4, (i * 7) % 11]),
+      feature_names: ["plotted", "Tracking_feature", "noise"],
+    });
+    const g = geometry({ parsed: strong, colorFeatureMinScore: 0.1 });
     expect(g.colorFeatureIndex).toBe(1);
-    expect(g.colorNote).toMatch(/^interaction 0\.\d\d$/);
+    expect(g.colorFeatureLabel).toBe("Tracking feature");
+    expect(g.colorNote).toMatch(/^interaction \d\.\d\d$/);
+    expect(Number(g.colorNote.match(/(\d+\.\d+)$/)?.[1])).toBeGreaterThan(0);
+  });
+
+  it("draws the selected Feature name and honours the colour-bar switch", () => {
+    const props = {
+      explanation: {
+        contract_version: 1 as const,
+        values: [[0.1, 0], [0.2, 0]],
+        base_values: 0,
+        data: [[1, 2], [2, 3]],
+        feature_names: ["plotted", "Colour_feature"],
+      },
+      feature: 0,
+      colorFeature: 1,
+    };
+    const withBar = renderToStaticMarkup(createElement(ShapScatter, { ...props, colorBar: true }));
+    const withoutBar = renderToStaticMarkup(createElement(ShapScatter, { ...props, colorBar: false }));
+
+    expect(withBar).toContain("Colour feature");
+    expect(withBar).toContain('aria-label="Feature value: Low to High"');
+    expect(withoutBar).not.toContain('aria-label="Feature value: Low to High"');
   });
 
   it("drops the trend line when asked", () => {

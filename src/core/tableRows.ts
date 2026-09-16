@@ -49,8 +49,8 @@ export function embeddingTableRows(
     columns: ["Sample", layout.xTitle, layout.yTitle],
     rows: layout.points.map((point) => [
       sampleName(parsed, point.sampleIndex, words),
-      formatLevel(point.cx),
-      formatLevel(point.cy),
+      formatLevel(point.coordinates[0]),
+      formatLevel(point.coordinates[1]),
     ]),
   };
 }

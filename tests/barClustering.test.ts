@@ -62,6 +62,25 @@ describe("clusteredOrder", () => {
     expect(linkage).toBe(supplied);
   });
 
+  it("keeps every Feature when a supplied linkage covers only the leading pool", () => {
+    const featureCount = 60;
+    const many = parseExplanation({
+      contract_version: 1,
+      values: [Array.from({ length: featureCount }, (_, j) => featureCount - j)],
+      base_values: 0,
+      data: [Array.from({ length: featureCount }, (_, j) => j)],
+      feature_names: Array.from({ length: featureCount }, (_, j) => `f${j}`),
+    });
+    const ranked = orderFeatures(globalImportance(many));
+    const supplied = [[0, 1, 0.05, 2], [3, 2, 0.9, 3]];
+
+    const { order } = clusteredOrder({ parsed: many, importanceOrder: ranked, mode: supplied, cutoff: 0.5 });
+
+    expect(order).toHaveLength(featureCount);
+    expect(new Set(order).size).toBe(featureCount);
+    expect(order.slice(3)).toEqual(ranked.slice(3));
+  });
+
   it("rejects a supplied matrix of the wrong shape", () => {
     expect(() =>
       clusteredOrder({ parsed, importanceOrder, mode: [[0, 1, 0.5]], cutoff: 0.5 }),
@@ -82,5 +101,22 @@ describe("ShapBar clustering", () => {
     expect(() => renderToStaticMarkup(createElement(ShapBar, {
       explanation, clustering: "shap", maxDisplay: 5,
     }))).not.toThrow();
+  });
+
+  it("draws a dendrogram connection that crosses the display cut", () => {
+    const explanation = {
+      contract_version: 1 as const,
+      values: [[3, 2, 1]],
+      base_values: 0,
+      data: [[3, 2, 1]],
+      feature_names: ["a", "b", "c"],
+    };
+    const svg = renderToStaticMarkup(createElement(ShapBar, {
+      explanation,
+      clustering: [[0, 1, 0.05, 2], [3, 2, 0.9, 3]],
+      maxDisplay: 2,
+    }));
+
+    expect(svg.match(/<polyline/g)).toHaveLength(2);
   });
 });

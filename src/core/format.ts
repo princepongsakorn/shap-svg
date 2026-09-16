@@ -8,6 +8,11 @@ export type ValuePrecision = 2 | 3 | 4 | "percent";
 /** Decimal places a percentage is shown to. */
 const PERCENT_DECIMALS = 2;
 
+/** An unsigned fixed-decimal display value, for percentages and bounded scores. */
+export function formatFixed(v: number, decimals: number): string {
+  return Math.abs(v).toFixed(decimals);
+}
+
 /**
  * Spec 3.5 V1. SHAP's "%0.03f" renders most relative-abundance-scale values as "0" or "-0";
  * this keeps them readable and always signs the value so a bar's direction is unambiguous.

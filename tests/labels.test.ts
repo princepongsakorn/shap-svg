@@ -12,6 +12,7 @@ import { ShapBar } from "../src/react/ShapBar";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { ShapWaterfall } from "../src/react/ShapWaterfall";
+import { ShapForce } from "../src/react/ShapForce";
 
 const raw = {
   contract_version: 1,
@@ -148,6 +149,8 @@ describe("labels added in 0.3.0", () => {
     expect(shapLabels.weakInteraction).toBe("no strong interaction found");
     expect(shapLabels.trend).toBe("Median trend");
     expect(shapLabels.tableCaption).toBe("Chart data");
+    expect(shapLabels.higher).toBe("higher");
+    expect(shapLabels.lower).toBe("lower");
   });
 
   it("lets a caller override exactly one new key", () => {
@@ -155,5 +158,13 @@ describe("labels added in 0.3.0", () => {
     expect(resolved.absent).toBe("Not detected");
     expect(resolved.trend).toBe("Median trend");
     expect(resolved.shapValue).toBe("SHAP value");
+  });
+
+  it("force draws translatable direction labels either side of the Model output", () => {
+    const svg = renderToStaticMarkup(createElement(ShapForce, {
+      explanation: raw, labels: { higher: "up", lower: "down" },
+    }));
+    expect(svg).toContain(">up</text>");
+    expect(svg).toContain(">down</text>");
   });
 });

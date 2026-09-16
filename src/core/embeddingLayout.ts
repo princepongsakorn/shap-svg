@@ -16,7 +16,14 @@ import { PlotLabels, resolveLabels } from "./labels";
 
 const MARGIN = { left: 64, right: 24, top: 20, bottom: 52 };
 
-export type EmbeddingPoint = { cx: number; cy: number; color: string; sampleIndex: number };
+export type EmbeddingPoint = {
+  cx: number;
+  cy: number;
+  /** Unscaled coordinates in the projection supplied to or computed by the layout. */
+  coordinates: [number, number];
+  color: string;
+  sampleIndex: number;
+};
 
 export type EmbeddingLayoutInput = {
   parsed: ParsedExplanation;
@@ -83,6 +90,7 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
   const points: EmbeddingPoint[] = positions.map((position, i) => ({
     cx: toX(position[0]),
     cy: toY(position[1]),
+    coordinates: position,
     sampleIndex: i,
     color: colourValues
       ? sampleColormap(

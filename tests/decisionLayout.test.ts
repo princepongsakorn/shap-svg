@@ -64,6 +64,26 @@ describe("decisionLayout", () => {
     expect(layout({ sampleIndices: [1] }).paths.map((p) => p.sampleIndex)).toEqual([1]);
   });
 
+  it("centres on the mean selected Base value regardless of Sample order", () => {
+    const varyingBases = parseExplanation({
+      contract_version: 1,
+      values: [[0.2], [-0.1]],
+      base_values: [0.2, 0.8],
+      data: [[1], [2]],
+      feature_names: ["only"],
+    });
+    const forward = decisionLayout({
+      parsed: varyingBases, width: 600, rowHeight: 28, maxDisplay: 1, sampleIndices: [0, 1],
+    });
+    const reversed = decisionLayout({
+      parsed: varyingBases, width: 600, rowHeight: 28, maxDisplay: 1, sampleIndices: [1, 0],
+    });
+
+    expect(forward.baseValue).toBeCloseTo(0.5, 12);
+    expect(reversed.baseValue).toBeCloseTo(0.5, 12);
+    expect(reversed.xDomain).toEqual(forward.xDomain);
+  });
+
   it("thins the strokes as the Sample count grows", () => {
     const few = layout().pathOpacity;
     const many = decisionLayout({

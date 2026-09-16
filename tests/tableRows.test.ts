@@ -4,7 +4,10 @@ import { resolveLabels } from "../src/core/labels";
 import { scatterPoints } from "../src/core/scatterLayout";
 import { forceLayout } from "../src/core/forceLayout";
 import { decisionLayout } from "../src/core/decisionLayout";
-import { decisionTableRows, forceTableRows, scatterTableRows } from "../src/core/tableRows";
+import { embeddingLayout } from "../src/core/embeddingLayout";
+import {
+  decisionTableRows, embeddingTableRows, forceTableRows, scatterTableRows,
+} from "../src/core/tableRows";
 
 const parsed = parseExplanation({
   contract_version: 1,
@@ -45,5 +48,16 @@ describe("decisionTableRows", () => {
     const layout = decisionLayout({ parsed, width: 400, rowHeight: 20, maxDisplay: 2 });
     const table = decisionTableRows(layout, parsed, words);
     expect(table.rows[0][table.rows[0].length - 1]).toBe("0.7");
+  });
+});
+
+describe("embeddingTableRows", () => {
+  it("publishes projection coordinates independently of chart width", () => {
+    const coords: [number, number][] = [[-2.5, 7], [3.25, -4]];
+    const narrow = embeddingLayout({ parsed, width: 320, height: 240, colorBy: "none", coords });
+    const wide = embeddingLayout({ parsed, width: 960, height: 240, colorBy: "none", coords });
+
+    expect(embeddingTableRows(narrow, parsed, words)).toEqual(embeddingTableRows(wide, parsed, words));
+    expect(embeddingTableRows(narrow, parsed, words).rows[0].slice(1)).toEqual(["−2.5", "7"]);
   });
 });
