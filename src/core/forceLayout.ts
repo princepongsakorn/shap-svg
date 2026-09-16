@@ -71,7 +71,7 @@ export function forceLayout(input: ForceLayoutInput): ForceLayout {
   );
 
   const totalEffect = display.rows.reduce((sum, r) => sum + Math.abs(r.value), 0) || 1;
-  const usable = width - MARGIN.left - MARGIN.right;
+  const usable = Math.max(0, width - MARGIN.left - MARGIN.right);
   const scale = usable / totalEffect;
 
   const positives = display.rows.filter((r) => r.value > 0).sort((a, b) => b.value - a.value);
@@ -116,7 +116,7 @@ export function forceLayout(input: ForceLayoutInput): ForceLayout {
     cursor += segmentWidth;
   }
 
-  const outputSpan = modelOutput - baseValue || 1;
+  const outputSpan = modelOutput - baseValue;
   return {
     segments,
     baseValue,

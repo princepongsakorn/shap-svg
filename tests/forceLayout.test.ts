@@ -48,4 +48,26 @@ describe("forceLayout", () => {
   it("gives every segment a positive width", () => {
     for (const segment of layout().segments) expect(segment.width).toBeGreaterThanOrEqual(0);
   });
+
+  it("does not give segments negative widths when the chart is narrower than its margins", () => {
+    for (const segment of layout({ width: 20 }).segments) {
+      expect(segment.width).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it("keeps equal Base value and Model output marks together for an all-zero Sample", () => {
+    const zeroParsed = parseExplanation({
+      contract_version: 1,
+      values: [[0, 0]],
+      base_values: 0.4,
+      data: [[1, 2]],
+      feature_names: ["a", "b"],
+    });
+    const zero = forceLayout({
+      parsed: zeroParsed, sampleIndex: 0, width: 640, height: 90, maxDisplay: 2,
+    });
+
+    expect(zero.baseValueX).toBe(zero.meetingX);
+    for (const segment of zero.segments) expect(Number.isFinite(segment.width)).toBe(true);
+  });
 });
