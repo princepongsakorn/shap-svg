@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { Explanation, TableView } from "../core/types";
+import { Explanation, ParsedExplanation, TableView } from "../core/types";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { forceLayout } from "../core/forceLayout";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { forceTableRows } from "../core/tableRows";
+import { placeTooltip } from "../core/tooltip";
 import { ChartTable } from "./ChartTable";
 
 /** Average advance of one glyph in the force chart's 11–12px text. */
@@ -48,6 +49,33 @@ function clampTextX(
   return Math.max(minimum, Math.min(x, maximum));
 }
 
+const TOOLTIP_LINE_HEIGHT = 15;
+
+/**
+ * What a hovered segment says.
+ *
+ * A bare number told a reader nothing: the segments are unlabelled wherever the
+ * name does not fit, which is most of them, so hovering has to supply the name
+ * as well as the value. The abundance comes too — a contribution is only
+ * readable next to how much of the taxon was actually there.
+ */
+export function forceTooltipLines(
+  parsed: ParsedExplanation,
+  sampleIndex: number,
+  segment: { label: string; featureIndex: number | null; isOtherRow: boolean; value: number },
+  words: PlotLabels,
+): string[] {
+  const lines = [
+    segment.isOtherRow ? segment.label : formatFeatureLabel(segment.label),
+    `${words.shapValue}: ${formatShapValue(segment.value)}`,
+  ];
+  if (segment.featureIndex !== null) {
+    const value = parsed.data[sampleIndex][segment.featureIndex];
+    lines.push(`${words.featureValue}: ${value > 0 ? formatLevel(value) : words.absent}`);
+  }
+  return lines;
+}
+
 export type ShapForceProps = {
   explanation: Explanation;
   sampleIndex?: number;
@@ -76,13 +104,13 @@ export function ShapForce({
   const [hovered, setHovered] = useState<number | null>(null);
   const words = useMemo(() => resolveLabels(labels), [labels]);
 
-  const { layout, table } = useMemo(() => {
+  const { layout, table, parsed } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
     const layout = forceLayout({
       parsed, sampleIndex, width, height, maxDisplay, faithfulOtherRow, labels: words,
     });
-    return { layout, table: forceTableRows(layout, words) };
+    return { layout, table: forceTableRows(layout, words), parsed };
   }, [explanation, sampleIndex, maxDisplay, faithfulOtherRow, groupByGenus, classIndex,
       width, height, words]);
 
@@ -91,6 +119,20 @@ export function ShapForce({
   const higherX = clampTextX(layout.meetingX - 8, words.higher, "end", width);
   const lowerX = clampTextX(layout.meetingX + 8, words.lower, "start", width);
   const baseValueX = clampTextX(layout.baseValueX, words.baseValue, "middle", width);
+
+  const active = hovered === null ? null : layout.segments[hovered] ?? null;
+  const tooltipLines = active ? forceTooltipLines(parsed, sampleIndex, active, words) : [];
+  const tooltip = active
+    ? placeTooltip({
+        anchorX: active.x + active.width / 2,
+        anchorY: layout.barY + layout.barHeight / 2,
+        lines: tooltipLines,
+        lineHeight: TOOLTIP_LINE_HEIGHT,
+        minWidth: 120,
+        chartWidth: width,
+        chartHeight: height,
+      })
+    : null;
 
   return (
     <>
@@ -143,8 +185,17 @@ export function ShapForce({
             textAnchor="middle" fontSize={11} fill="#666666">
         {words.baseValue}
       </text>
-      {hovered !== null && (
-        <title>{formatShapValue(layout.segments[hovered].value)}</title>
+      {tooltip && tooltipLines.length > 0 && (
+        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
+          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
+                fill="#ffffff" stroke="#cccccc" />
+          {tooltipLines.map((line, index) => (
+            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
+                  fontSize={11} fill="#222222">
+              {line}
+            </text>
+          ))}
+        </g>
       )}
       </svg>
       <ChartTable data={table} view={tableView} />

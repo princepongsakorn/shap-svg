@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseExplanation } from "../src/core/parse";
 import { forceLayout } from "../src/core/forceLayout";
+import { forceTooltipLines } from "../src/react/ShapForce";
+import { shapLabels } from "../src/core/labels";
 import { NEGATIVE_COLOR, POSITIVE_COLOR } from "../src/core/barLayout";
 
 const parsed = parseExplanation({
@@ -76,5 +78,39 @@ describe("forceLayout", () => {
 
     expect(zero.baseValueX).toBe(zero.meetingX);
     for (const segment of zero.segments) expect(Number.isFinite(segment.width)).toBe(true);
+  });
+});
+
+describe("what a hovered segment says", () => {
+  const withNames = parseExplanation({
+    contract_version: 1,
+    values: [[0.30, -0.10, 0.01]],
+    base_values: 0.4,
+    data: [[0.002, 0, 0.5]],
+    feature_names: ["Fusobacterium_nucleatum", "Parvimonas_micra", "c"],
+  });
+  const layout = forceLayout({
+    parsed: withNames, sampleIndex: 0, width: 640, height: 110, maxDisplay: 3,
+  });
+  const lines = (label: string) =>
+    forceTooltipLines(
+      withNames, 0, layout.segments.find((s) => s.label.startsWith(label))!, shapLabels,
+    );
+
+  it("names the taxon rather than leaving a bare number", () => {
+    expect(lines("Fusobacterium")[0]).toBe("Fusobacterium nucleatum");
+  });
+
+  it("signs the contribution, so its direction is unambiguous", () => {
+    expect(lines("Fusobacterium")[1]).toBe("SHAP value: +0.3");
+    expect(lines("Parvimonas")[1]).toBe("SHAP value: −0.1");
+  });
+
+  it("carries the abundance the contribution came from", () => {
+    expect(lines("Fusobacterium")[2]).toContain("0.002");
+  });
+
+  it("says the taxon was not detected rather than showing a zero", () => {
+    expect(lines("Parvimonas")[2]).toBe(`${shapLabels.featureValue}: ${shapLabels.absent}`);
   });
 });
