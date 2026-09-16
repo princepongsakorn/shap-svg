@@ -91,9 +91,13 @@ export function strongestInteraction(
 ): { index: number; score: number } | null {
   const scores = interactionScores(featureIndex, values, data);
   let best = -1;
-  let bestScore = 0;
+  let bestScore = -1;
   scores.forEach((score, index) => {
-    if (score > bestScore) {
+    if (index === featureIndex) return;
+    const column = data.map((row) => row[index]);
+    const hasSignal = column.some((value) => Math.abs(value) >= 1e-8);
+    const varies = column.some((value) => value !== column[0]);
+    if (hasSignal && varies && score > bestScore) {
       bestScore = score;
       best = index;
     }

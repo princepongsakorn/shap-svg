@@ -2,6 +2,7 @@ import { ShapBar, type ShapBarProps } from "./src/react/ShapBar";
 import { ShapBeeswarm, type ShapBeeswarmProps } from "./src/react/ShapBeeswarm";
 import { ShapHeatmap, type ShapHeatmapProps } from "./src/react/ShapHeatmap";
 import { ShapWaterfall, type ShapWaterfallProps } from "./src/react/ShapWaterfall";
+import { ShapScatter, type ShapScatterProps } from "./src/react/ShapScatter";
 
 /** Give a chart the name it is written as, so React DevTools shows `Plots.bar`. */
 function named<T extends object>(component: T, displayName: string): T & { displayName: string } {
@@ -21,9 +22,11 @@ export const Plots = {
   beeswarm: named(ShapBeeswarm, "Plots.beeswarm"),
   heatmap: named(ShapHeatmap, "Plots.heatmap"),
   waterfall: named(ShapWaterfall, "Plots.waterfall"),
+  scatter: named(ShapScatter, "Plots.scatter"),
 } as const;
 
 export type BarPlotProps = ShapBarProps;
 export type BeeswarmPlotProps = ShapBeeswarmProps;
 export type HeatmapPlotProps = ShapHeatmapProps;
 export type WaterfallPlotProps = ShapWaterfallProps;
+export type ScatterPlotProps = ShapScatterProps;
