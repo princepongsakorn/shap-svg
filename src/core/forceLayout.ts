@@ -80,7 +80,7 @@ export function forceLayout(input: ForceLayoutInput): ForceLayout {
   const positiveTotal = positives.reduce((sum, r) => sum + Math.abs(r.value), 0);
   const meetingX = MARGIN.left + positiveTotal * scale;
   const barHeight = Math.max(12, height - 48);
-  const barY = 16;
+  const barY = 24;
 
   const segments: ForceSegment[] = [];
   // Positives fill leftwards from the meeting point, largest adjacent to it.

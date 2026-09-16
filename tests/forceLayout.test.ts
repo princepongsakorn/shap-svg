@@ -55,6 +55,13 @@ describe("forceLayout", () => {
     }
   });
 
+  it("keeps both annotation rows inside a 110px chart", () => {
+    const compact = layout({ height: 110 });
+
+    expect(compact.barY - 10).toBeGreaterThanOrEqual(12);
+    expect(compact.barY + compact.barHeight + 22).toBeLessThanOrEqual(110);
+  });
+
   it("keeps equal Base value and Model output marks together for an all-zero Sample", () => {
     const zeroParsed = parseExplanation({
       contract_version: 1,
