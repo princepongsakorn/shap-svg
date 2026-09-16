@@ -15,7 +15,18 @@ describe("dendrogramCoords", () => {
   it("draws each bracket as four points, up across and down", () => {
     const [first] = dendrogramCoords([0, 1, 2], linkage);
     expect(first.xs).toEqual([0, 0, 1, 1]);
-    expect(first.ys).toEqual([0, 0.2, 0.2, 0.2]);
+    expect(first.ys).toEqual([0, 0.2, 0.2, 0]);
+  });
+
+  it("starts the right leg at the right child's own merge height", () => {
+    // Leaves 2 and 3 merge at 0.3; leaf 0 joins that cluster at 0.9.
+    const nested = [
+      [2, 3, 0.3, 2],
+      [0, 4, 0.9, 3],
+    ];
+    const [, outer] = dendrogramCoords([0, 1, 2, 3], nested);
+    expect(outer.ys[0]).toBeCloseTo(0, 9);
+    expect(outer.ys[3]).toBeCloseTo(0.3, 9);
   });
 
   it("hangs the outer bracket from the midpoint of the inner one", () => {

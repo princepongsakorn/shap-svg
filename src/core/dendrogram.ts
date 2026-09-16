@@ -22,7 +22,7 @@ export function dendrogramCoords(
   linkage: number[][],
 ): DendrogramSegment[] {
   if (linkage.length === 0) return [];
-  const leafCount = linkage.length + 1;
+  const leafCount = leafPositions.length;
   const out: DendrogramSegment[] = [];
 
   /** Returns the anchor (position, height) the parent bracket hangs from. */
@@ -31,12 +31,12 @@ export function dendrogramCoords(
 
     const row = linkage[node - leafCount];
     const [leftX, leftY] = walk(row[0]);
-    const [rightX] = walk(row[1]);
+    const [rightX, rightY] = walk(row[1]);
     const height = row[2];
 
     out.push({
       xs: [leftX, leftX, rightX, rightX],
-      ys: [leftY, height, height, height],
+      ys: [leftY, height, height, rightY],
     });
     return [(leftX + rightX) / 2, height];
   };
