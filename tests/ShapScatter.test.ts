@@ -200,3 +200,38 @@ describe("the x axis says what it measures", () => {
     expect(g.xTitle.unit).toBe("Relative abundance");
   });
 });
+
+describe("what the dots are coloured by", () => {
+  it("colours by the Sample's own Model output when asked", () => {
+    const g = geometry({ colorFeature: "output" });
+    expect(g.colorFeatureIndex).toBeNull();
+    expect(g.colorBar).not.toBeNull();
+    expect(g.colorBar?.label.text).toBe(shapLabels.colorScale(shapLabels.modelOutput));
+  });
+
+  it("puts real values on that scale rather than Low and High", () => {
+    const ticks = geometry({ colorFeature: "output" }).colorBar?.ticks.map((t) => t.label);
+    expect(ticks).not.toContain(shapLabels.featureValueLow);
+    for (const tick of ticks ?? []) expect(Number.isNaN(Number(tick))).toBe(false);
+  });
+
+  it("gives every Sample a colour in that mode, not one flat hue", () => {
+    const g = geometry({ colorFeature: "output" });
+    const colours = new Set([...g.absentPoints, ...g.detectedPoints].map((p) => p.color));
+    expect(colours.size).toBeGreaterThan(1);
+  });
+
+  it("draws no scale and one hue when colouring is off", () => {
+    const g = geometry({ colorFeature: "none" });
+    expect(g.colorBar).toBeNull();
+    const colours = new Set([...g.absentPoints, ...g.detectedPoints].map((p) => p.color));
+    expect(colours.size).toBe(1);
+  });
+
+  it("italicises the taxon's name on the scale, and nothing else", () => {
+    const parts = geometry({ colorFeature: 1, colorFeatureMinScore: 0 }).colorBar?.label.parts;
+    const italic = parts?.filter((part) => part.italic).map((part) => part.text);
+    expect(italic).toEqual(["Bacteroides fragilis"]);
+    expect(parts?.map((part) => part.text).join("")).toContain("Colour:");
+  });
+});

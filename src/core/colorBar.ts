@@ -25,6 +25,13 @@ export type ColorBarSpec = {
   /** matplotlib's offset text ("1e−5"), when the tick labels are scaled. */
   offsetText?: string;
   label: string;
+  /**
+   * The title broken into runs, so the part that names a taxon can be set in
+   * italics as species names are everywhere else in this package. A taxon's
+   * name sits in the middle of the title, not at its start, so a prefix would
+   * not do. Omitted, the title is drawn as the single string `label` is.
+   */
+  labelParts?: { text: string; italic?: boolean }[];
   /** set_label's labelpad, in pt: 0 for the beeswarm, -10 for the heatmap. */
   labelPad: number;
 };
@@ -44,7 +51,13 @@ export type ColorBarGeometry = {
   ticks: ColorBarTick[];
   offsetText?: { x: number; y: number; text: string };
   /** Drawn rotated -90° about (x, y), reading bottom to top. */
-  label: { x: number; y: number; text: string; fontSize: number };
+  label: {
+    x: number;
+    y: number;
+    text: string;
+    parts?: { text: string; italic?: boolean }[];
+    fontSize: number;
+  };
   /** Right edge of everything the bar draws. */
   right: number;
 };
@@ -134,6 +147,7 @@ export function colorBarLayout(
       x: labelLeft + LABEL_PT * LABEL_BASELINE_EM,
       y: (y1 + y2) / 2,
       text: spec.label,
+      ...(spec.labelParts ? { parts: spec.labelParts } : {}),
       fontSize: LABEL_PT,
     },
     right: Math.max(

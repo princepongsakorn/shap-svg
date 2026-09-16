@@ -37,7 +37,7 @@ export type ScatterGeometryInput = {
   featureIndex: number;
   width: number;
   height: number;
-  colorFeature: number | "auto" | "none";
+  colorFeature: number | "auto" | "none" | "output";
   colorFeatureMinScore: number;
   colorBar?: boolean;
   xScale: "log" | "linear";
@@ -177,9 +177,17 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
   const toX = (v: number) =>
     detectedLeft + ((scaleOf(v) - lowScaled) / scaledSpan) * (plotRight - detectedLeft);
 
-  // Colour Feature: SHAP's automatic pick, but only used when it is strong.
+  // What the dots are coloured by. Three modes, and the chart says which is in
+  // force on the scale itself.
+  //
+  //  "auto"   a second Feature, the one SHAP's heuristic finds interacts most
+  //           with the plotted one — used only when that heuristic is confident
+  //  a number that Feature, chosen by the caller
+  //  "output" each Sample's own Model output, so the cloud reads as the risk
+  //           gradient it sits on rather than as one flat colour
   let colorFeatureIndex: number | null = null;
   let colorNote = "";
+  let byOutput = false;
   if (colorFeature === "auto") {
     const best = strongestInteraction(featureIndex, parsed.values, parsed.data);
     if (best && best.score >= colorFeatureMinScore) {
@@ -188,50 +196,77 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     } else {
       colorNote = words.weakInteraction;
     }
+  } else if (colorFeature === "output") {
+    byOutput = true;
   } else if (typeof colorFeature === "number" && colorFeature !== featureIndex) {
     colorFeatureIndex = colorFeature;
   }
 
+  const outputs = parsed.values.map(
+    (row, i) => parsed.baseValues[i] + row.reduce((sum, value) => sum + value, 0),
+  );
+
   // SHAP clips the colour scale to the 5th and 95th percentiles.
   let colorLow = 0;
   let colorHigh = 1;
-  if (colorFeatureIndex !== null) {
-    const column = parsed.data.map((row) => row[colorFeatureIndex as number]).sort((a, b) => a - b);
-    const at = (q: number) => column[Math.min(column.length - 1, Math.floor(q * column.length))];
+  const clipTo = (column: number[]) => {
+    const sorted = [...column].sort((a, b) => a - b);
+    const at = (q: number) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
     colorLow = at(0.05);
     colorHigh = at(0.95);
     if (colorLow === colorHigh) {
-      colorLow = column[0];
-      colorHigh = column[column.length - 1];
+      colorLow = sorted[0];
+      colorHigh = sorted[sorted.length - 1];
     }
+  };
+  if (colorFeatureIndex !== null) {
+    clipTo(parsed.data.map((row) => row[colorFeatureIndex as number]));
+  } else if (byOutput) {
+    clipTo(outputs);
   }
+
   const colorOf = (sampleIndex: number) => {
-    if (colorFeatureIndex === null) return UNCOLOURED;
-    const value = parsed.data[sampleIndex][colorFeatureIndex];
+    if (colorFeatureIndex === null && !byOutput) return UNCOLOURED;
+    const value = byOutput ? outputs[sampleIndex] : parsed.data[sampleIndex][colorFeatureIndex!];
     const t = colorHigh === colorLow ? 0.5 : (value - colorLow) / (colorHigh - colorLow);
     return sampleColormap(colormap, t);
   };
+
   const colorFeatureLabel = colorFeatureIndex === null
     ? null
     : formatFeatureLabel(parsed.featureNames[colorFeatureIndex]);
-  const colorBarGeometry = colorFeatureIndex === null || !colorBar
+
+  // The scale's own title says what the colour means, and for the interaction
+  // mode why that Feature was picked — two separate pieces of text made the
+  // reader join them up. The taxon's name is set in italics, as it is on the x
+  // axis and in every tooltip.
+  const scaleSubject = colorFeatureLabel
+    ? `${colorFeatureLabel} · ${words.featureValue}${colorNote ? ` (${colorNote})` : ""}`
+    : words.modelOutput;
+  // Only the taxon's name is italic — not the word that marks this a colour
+  // scale, and not the quantity.
+  const scaleParts = colorFeatureLabel
+    ? (() => {
+        const title = words.colorScale(scaleSubject);
+        const at = title.indexOf(colorFeatureLabel);
+        return at < 0
+          ? undefined
+          : [
+              { text: title.slice(0, at) },
+              { text: colorFeatureLabel, italic: true },
+              { text: title.slice(at + colorFeatureLabel.length) },
+            ];
+      })()
+    : undefined;
+  const colorBarGeometry = (colorFeatureIndex === null && !byOutput) || !colorBar
     ? null
     : colorBarLayout({
         colormap,
-        tickLabels: [words.featureValueLow, words.featureValueHigh],
-        // Naming the Feature here is the whole point: the colour is a *second*
-        // taxon's abundance, not the plotted one's, and a bar labelled only
-        // "Relative abundance" reads as the plotted taxon's.
-        // Everything about the colour on the scale itself: what it encodes, and
-        // why that Feature was picked. Two separate pieces of text made the
-        // reader join them up.
-        label: words.colorScale(
-          colorFeatureIndex === null
-            ? words.featureValue
-            : `${formatFeatureLabel(parsed.featureNames[colorFeatureIndex])} · ${
-                words.featureValue
-              }${colorNote ? ` (${colorNote})` : ""}`,
-        ),
+        tickLabels: byOutput
+          ? [formatLevel(colorLow), formatLevel(colorHigh)]
+          : [words.featureValueLow, words.featureValueHigh],
+        label: words.colorScale(scaleSubject),
+        ...(scaleParts ? { labelParts: scaleParts } : {}),
         labelPad: 0,
       }, { x: plotRight + 18, y1: plotTop, y2: plotBottom });
 
@@ -302,7 +337,7 @@ export type ShapScatterProps = {
   explanation: Explanation;
   /** Which Feature to draw, by name or index. Required — there is no default. */
   feature: string | number;
-  colorFeature?: string | number | "auto" | "none";
+  colorFeature?: string | number | "auto" | "none" | "output";
   /** Below this mean |r|, the chart draws in one hue and says why. */
   colorFeatureMinScore?: number;
   xScale?: "log" | "linear";
@@ -349,7 +384,9 @@ export function ShapScatter({
       throw new RangeError(`unknown feature ${String(feature)}`);
     }
     const resolvedColor =
-      colorFeature === "auto" || colorFeature === "none" ? colorFeature : indexOf(colorFeature);
+      colorFeature === "auto" || colorFeature === "none" || colorFeature === "output"
+        ? colorFeature
+        : indexOf(colorFeature);
     const split = scatterPoints(p, featureIndex);
     return {
       parsed: p,

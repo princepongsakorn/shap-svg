@@ -47,7 +47,13 @@ export function ColorBar({ bar }: { bar: ColorBarGeometry }) {
         fontSize={bar.label.fontSize}
         fill="#333333"
       >
-        {bar.label.text}
+        {bar.label.parts
+          ? bar.label.parts.map((part, index) => (
+              <tspan key={`label-part-${index}`} fontStyle={part.italic ? "italic" : undefined}>
+                {part.text}
+              </tspan>
+            ))
+          : bar.label.text}
       </text>
     </g>
   );
