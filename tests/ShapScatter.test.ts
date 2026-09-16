@@ -43,7 +43,7 @@ describe("scatterGeometry", () => {
   });
 
   it("labels the absent band with its count", () => {
-    expect(geometry().absentLabel).toBe("Absent (n = 2)");
+    expect(geometry().absentLabelLines.join(" ")).toBe("Absent (n = 2)");
   });
 
   it("omits the absent band when nothing is absent", () => {

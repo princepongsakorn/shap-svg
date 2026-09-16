@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parseExplanation } from "../src/core/parse";
 import { binnedMedianTrend, logDomain, scatterPoints } from "../src/core/scatterLayout";
+import { wrapToWidth } from "../src/react/ShapScatter";
 
 const parsed = parseExplanation({
   contract_version: 1,
@@ -86,5 +87,22 @@ describe("binnedMedianTrend", () => {
 
   it("draws nothing for fewer than four detected Samples", () => {
     expect(binnedMedianTrend([{ sampleIndex: 0, value: 1, shap: 1 }])).toEqual([]);
+  });
+});
+
+describe("the Absent band's tick", () => {
+  it("wraps onto lines narrow enough to clear the first abundance tick", () => {
+    const lines = wrapToWidth("Not detected (n = 146)", 70);
+    expect(lines.length).toBeGreaterThan(1);
+    for (const line of lines) expect(line.length * 5.6).toBeLessThanOrEqual(70);
+  });
+
+  it("leaves a label that already fits on one line", () => {
+    expect(wrapToWidth("Absent (n = 2)", 200)).toEqual(["Absent (n = 2)"]);
+  });
+
+  it("never drops a word, whatever the wording", () => {
+    const text = "Ikke påvist (n = 1234)";
+    expect(wrapToWidth(text, 40).join(" ")).toBe(text);
   });
 });

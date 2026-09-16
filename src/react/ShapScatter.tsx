@@ -18,6 +18,8 @@ const MARGIN = { right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
 const ABSENT_BAND = 56;
 const ABSENT_GAP = 18;
+/** Average advance of one glyph of the 11px axis text. Estimated, never measured. */
+const AXIS_CHAR_PX = 5.6;
 const DOT_RADIUS = 4;
 const TICK_LABEL_PT = 11;
 const UNCOLOURED = "#1f77b4";
@@ -44,7 +46,8 @@ export type ScatterDot = { cx: number; cy: number; color: string; sampleIndex: n
 export type ScatterGeometry = {
   absentPoints: ScatterDot[];
   detectedPoints: ScatterDot[];
-  absentLabel: string | null;
+  /** The Absent band's tick, already wrapped to lines that fit under the band. */
+  absentLabelLines: string[];
   absentMeanY: number | null;
   zeroRuleY: number;
   trendPath: string | null;
@@ -88,6 +91,31 @@ export function scatterTooltipLines(
       }`,
     );
   }
+  return lines;
+}
+
+/**
+ * Break a label into lines that fit a given width, at spaces.
+ *
+ * The Absent band is narrow by design — it holds one column of points — so its
+ * tick would otherwise run under the first abundance tick and the two would
+ * print on top of each other. Wrapping at spaces rather than splitting the
+ * label on a known format keeps this working for translated wording.
+ */
+export function wrapToWidth(text: string, maxWidth: number): string[] {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const candidate = line ? `${line} ${word}` : word;
+    if (line && candidate.length * AXIS_CHAR_PX > maxWidth) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = candidate;
+    }
+  }
+  if (line) lines.push(line);
   return lines;
 }
 
@@ -224,7 +252,10 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
   return {
     absentPoints,
     detectedPoints,
-    absentLabel: absent.length > 0 ? words.absentWithCount(absent.length) : null,
+    absentLabelLines:
+      absent.length > 0
+        ? wrapToWidth(words.absentWithCount(absent.length), ABSENT_BAND + ABSENT_GAP - 4)
+        : [],
     absentMeanY,
     zeroRuleY: toY(0),
     trendPath,
@@ -380,11 +411,14 @@ export function ShapScatter({
           </g>
         ))}
       </g>
-      {geometry.absentLabel && (
-        <text x={geometry.plotLeft + 4} y={geometry.plotBottom + 18} fontSize={11} fill="#333333">
-          {geometry.absentLabel}
+      {geometry.absentLabelLines.map((line, index) => (
+        <text key={`absent-line-${index}`}
+              x={geometry.plotLeft + ABSENT_BAND / 2}
+              y={geometry.plotBottom + 18 + index * 13}
+              textAnchor="middle" fontSize={11} fill="#333333">
+          {line}
         </text>
-      )}
+      ))}
       {geometry.absentMeanY !== null && (
         <line x1={geometry.plotLeft} x2={geometry.plotLeft + 48}
               y1={geometry.absentMeanY} y2={geometry.absentMeanY}
