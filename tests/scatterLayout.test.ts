@@ -68,11 +68,20 @@ describe("binnedMedianTrend", () => {
   });
 
   it("anchors each window at its median abundance", () => {
-    const detected = [
-      { sampleIndex: 0, value: 1, shap: 1 },
-      { sampleIndex: 1, value: 3, shap: 3 },
-    ];
-    expect(binnedMedianTrend(detected)[0].value).toBe(1);
+    const detected = Array.from({ length: 40 }, (_, i) => ({
+      sampleIndex: i,
+      value: i + 1,
+      shap: 0,
+    }));
+    // Forty detected Samples means windows of four, so the first window spans
+    // abundances 1 to 4 and its median abundance is 2.5.
+    expect(binnedMedianTrend(detected)[0].value).toBe(2.5);
+  });
+
+  it("draws nothing for three detected Samples and something for four", () => {
+    const point = (i: number) => ({ sampleIndex: i, value: i + 1, shap: i });
+    expect(binnedMedianTrend([0, 1, 2].map(point))).toEqual([]);
+    expect(binnedMedianTrend([0, 1, 2, 3].map(point))).not.toEqual([]);
   });
 
   it("draws nothing for fewer than four detected Samples", () => {

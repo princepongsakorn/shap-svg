@@ -78,7 +78,7 @@ function median(sorted: number[]): number {
  * governs both.
  */
 export function binnedMedianTrend(detected: ScatterPoint[]): TrendPoint[] {
-  if (detected.length < MIN_TREND_SAMPLES && detected.length !== 2) return [];
+  if (detected.length < MIN_TREND_SAMPLES) return [];
   const window = interactionWindowSize(detected.length);
   const out: TrendPoint[] = [];
 
