@@ -66,6 +66,72 @@ describe("scatterGeometry", () => {
     expect(g.zeroRuleY).toBeLessThan(360);
   });
 
+  it("creates y ticks that cover SHAP values from absent and detected Samples", () => {
+    const g = geometry();
+    expect(g.yTicks[0].value).toBeLessThanOrEqual(-0.3);
+    expect(g.yTicks[g.yTicks.length - 1].value).toBeGreaterThanOrEqual(0.4);
+    expect(g.yTicks.some((tick) => tick.label === "0")).toBe(true);
+  });
+
+  it("reserves enough left margin for its widest y tick label and axis title", () => {
+    const wide = parseExplanation({
+      contract_version: 1,
+      values: [[-1234.5], [987.6]],
+      base_values: 0,
+      data: [[0], [1]],
+      feature_names: ["wide"],
+    });
+    const g = geometry({ parsed: wide, colorFeature: "none" });
+    const widest = Math.max(...g.yTicks.map((tick) => tick.label.length * 6.5));
+    expect(g.plotLeft).toBeGreaterThanOrEqual(g.yTitleX + 13 + 8 + widest + 8);
+  });
+
+  it("keeps tiny nonzero y ticks distinct instead of rounding them to zero", () => {
+    const tiny = parseExplanation({
+      contract_version: 1,
+      values: [[-3e-8], [4e-8]],
+      base_values: 0,
+      data: [[0], [1]],
+      feature_names: ["tiny"],
+    });
+    const labels = geometry({ parsed: tiny, colorFeature: "none" }).yTicks.map((tick) => tick.label);
+    expect(new Set(labels).size).toBe(labels.length);
+    expect(labels.some((label) => label !== "0")).toBe(true);
+  });
+
+  it("centres an all-zero SHAP column on a useful y scale", () => {
+    const zero = parseExplanation({
+      contract_version: 1,
+      values: [[0], [0]],
+      base_values: 0,
+      data: [[0], [1]],
+      feature_names: ["zero"],
+    });
+    const g = geometry({ parsed: zero, colorFeature: "none" });
+    expect(g.yTicks.length).toBeGreaterThan(1);
+    expect(g.yTicks[0].value).toBeLessThan(0);
+    expect(g.yTicks[g.yTicks.length - 1].value).toBeGreaterThan(0);
+    expect(g.zeroRuleY).toBeCloseTo((g.plotTop + g.plotBottom) / 2, 12);
+  });
+
+  it("renders only the left and bottom scatter spines", () => {
+    const svg = renderToStaticMarkup(createElement(ShapScatter, {
+      explanation: {
+        contract_version: 1 as const,
+        values: [[-0.2], [0.3]],
+        base_values: 0,
+        data: [[0], [1]],
+        feature_names: ["feature"],
+      },
+      feature: 0,
+      colorFeature: "none",
+    }));
+    expect(svg).toContain('data-axis-spine="left"');
+    expect(svg).toContain('data-axis-spine="bottom"');
+    expect(svg).not.toContain('data-axis-spine="right"');
+    expect(svg).not.toContain('data-axis-spine="top"');
+  });
+
   it("declines to colour when the strongest interaction is below the threshold", () => {
     const g = geometry({ colorFeatureMinScore: 1.1 });
     expect(g.colorFeatureIndex).toBeNull();

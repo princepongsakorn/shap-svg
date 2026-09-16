@@ -5,6 +5,11 @@ import { placeTooltip } from "../src/core/tooltip";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { ShapWaterfall } from "../src/react/ShapWaterfall";
+import { scatterTooltipLines } from "../src/react/ShapScatter";
+import { embeddingTooltipLines } from "../src/react/ShapEmbedding";
+import { decisionTooltipLines } from "../src/react/ShapDecision";
+import { parseExplanation } from "../src/core/parse";
+import { resolveLabels } from "../src/core/labels";
 
 const box = {
   lines: ["Bacteroides dorei", "SHAP value: +0.012", "Feature value: 0.0042"],
@@ -71,5 +76,50 @@ describe("accessible names use the chart's own words", () => {
     expect(
       renderToStaticMarkup(createElement(ShapWaterfall, { explanation: labelled, sampleIndex: 1 })),
     ).toContain('aria-label="SHAP value of each feature for sample_id: S-18"');
+  });
+});
+
+describe("interactive chart tooltip lines", () => {
+  const parsed = parseExplanation({
+    contract_version: 1,
+    values: [[-0.125, 0.25], [0.375, -0.5]],
+    base_values: [0.4, 0.6],
+    data: [[0, 2.5], [0.75, 4]],
+    feature_names: ["Plotted_feature", "Colour_feature"],
+    sample_labels: ["S-17", "S-18"],
+  });
+  const words = resolveLabels();
+
+  it("scatter names the Sample, plotted Feature, SHAP value, and colour Feature", () => {
+    expect(scatterTooltipLines(parsed, 1, 0, 1, words)).toEqual([
+      "S-18",
+      "Plotted feature: 0.75",
+      "SHAP value: +0.375",
+      "Colour feature: 4",
+    ]);
+  });
+
+  it("scatter says absent instead of zero for an undetected Sample", () => {
+    expect(scatterTooltipLines(parsed, 0, 0, 1, words)).toContain("Plotted feature: Absent");
+    expect(scatterTooltipLines(parsed, 0, 0, 1, words)).not.toContain("Plotted feature: 0");
+  });
+
+  it("embedding names the Sample and the quantity used for colour", () => {
+    expect(embeddingTooltipLines(parsed, 0, "sum", words)).toEqual([
+      "S-17",
+      "Σφ: +0.125",
+    ]);
+    expect(embeddingTooltipLines(parsed, 1, 1, words)).toEqual([
+      "S-18",
+      "Colour feature SHAP value: −0.5",
+    ]);
+  });
+
+  it("decision names an unlabelled Sample and its Model output", () => {
+    const unlabelled = { ...parsed, sampleLabels: undefined };
+    expect(decisionTooltipLines(unlabelled, 1, 0.475, words)).toEqual([
+      "Sample 2",
+      "Model output: 0.475",
+    ]);
   });
 });

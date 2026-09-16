@@ -12,14 +12,18 @@ import { scatterTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
 import { colorBarLayout, ColorBarGeometry } from "../core/colorBar";
 import { ColorBar } from "./ColorBar";
+import { placeTooltip } from "../core/tooltip";
 
-const MARGIN = { left: 70, right: 24, top: 16, bottom: 56 };
+const MARGIN = { right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
 const ABSENT_BAND = 56;
 const ABSENT_GAP = 18;
 const DOT_RADIUS = 4;
 const TICK_LABEL_PT = 11;
 const UNCOLOURED = "#1f77b4";
+const Y_TITLE_X = 14;
+const TOOLTIP_LINE_HEIGHT = 15;
+const ESTIMATED_GLYPH_WIDTH = 6.5;
 
 export type ScatterGeometryInput = {
   parsed: ParsedExplanation;
@@ -49,13 +53,43 @@ export type ScatterGeometry = {
   colorNote: string;
   colorBar: ColorBarGeometry | null;
   xTicks: { x: number; label: string }[];
+  yTicks: { value: number; y: number; label: string }[];
   plotLeft: number;
   plotRight: number;
   plotTop: number;
   plotBottom: number;
   xTitle: { text: string; x: number; y: number };
   yTitle: string;
+  yTitleX: number;
 };
+
+const sampleName = (parsed: ParsedExplanation, sampleIndex: number, words: PlotLabels) =>
+  parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1);
+
+export function scatterTooltipLines(
+  parsed: ParsedExplanation,
+  sampleIndex: number,
+  featureIndex: number,
+  colorFeatureIndex: number | null,
+  words: PlotLabels,
+): string[] {
+  const featureValue = parsed.data[sampleIndex][featureIndex];
+  const lines = [
+    sampleName(parsed, sampleIndex, words),
+    `${formatFeatureLabel(parsed.featureNames[featureIndex])}: ${
+      featureValue > 0 ? formatLevel(featureValue) : words.absent
+    }`,
+    `${words.shapValue}: ${formatShapValue(parsed.values[sampleIndex][featureIndex])}`,
+  ];
+  if (colorFeatureIndex !== null) {
+    lines.push(
+      `${formatFeatureLabel(parsed.featureNames[colorFeatureIndex])}: ${
+        formatLevel(parsed.data[sampleIndex][colorFeatureIndex])
+      }`,
+    );
+  }
+  return lines;
+}
 
 /** Pure geometry, exported so it can be tested without rendering. */
 export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
@@ -66,17 +100,34 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
   const words = input.labels ?? resolveLabels();
 
   const { absent, detected } = scatterPoints(parsed, featureIndex);
-  const plotTop = MARGIN.top;
-  const plotBottom = height - MARGIN.bottom;
-  const plotLeft = MARGIN.left;
-  const plotRight = width - (colorBar ? 90 : MARGIN.right);
-  const detectedLeft = absent.length > 0 ? plotLeft + ABSENT_BAND + ABSENT_GAP : plotLeft;
-
   const shapValues = parsed.values.map((row) => row[featureIndex]);
   const shapMin = Math.min(0, ...shapValues);
   const shapMax = Math.max(0, ...shapValues);
-  const shapSpan = shapMax - shapMin || 1;
-  const toY = (shap: number) => plotBottom - ((shap - shapMin) / shapSpan) * (plotBottom - plotTop);
+  const domainMin = shapMin === shapMax ? shapMin - 1 : shapMin;
+  const domainMax = shapMin === shapMax ? shapMax + 1 : shapMax;
+  const plotTop = MARGIN.top;
+  const plotBottom = height - MARGIN.bottom;
+  const initialYTicks = niceTicks(
+    domainMin, domainMax, tickSpace(plotBottom - plotTop, TICK_LABEL_PT),
+  );
+  const yStep = initialYTicks.step || 1;
+  const yMin = Math.floor(domainMin / yStep) * yStep;
+  const yMax = Math.ceil(domainMax / yStep) * yStep;
+  const yTickValues = niceTicks(
+    yMin, yMax, tickSpace(plotBottom - plotTop, TICK_LABEL_PT),
+  ).ticks;
+  const yTickLabel = (value: number) => {
+    const normalized = Number(tickLabel(value, yStep).replace("−", "-"));
+    return formatShapValue(value !== 0 && normalized === 0 ? value : normalized);
+  };
+  const widestYTick = Math.max(...yTickValues.map((value) => yTickLabel(value).length), 1)
+    * ESTIMATED_GLYPH_WIDTH;
+  const plotLeft = Math.max(70, Y_TITLE_X + 13 + 8 + widestYTick + 8);
+  const plotRight = width - (colorBar ? 90 : MARGIN.right);
+  const detectedLeft = absent.length > 0 ? plotLeft + ABSENT_BAND + ABSENT_GAP : plotLeft;
+  const shapSpan = yMax - yMin || 1;
+  const toY = (shap: number) => plotBottom - ((shap - yMin) / shapSpan) * (plotBottom - plotTop);
+  const yTicks = yTickValues.map((value) => ({ value, y: toY(value), label: yTickLabel(value) }));
 
   const [lowValue, highValue] = logDomain(detected);
   const useLog = xScale === "log" && lowValue > 0;
@@ -177,6 +228,7 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     colorNote,
     colorBar: colorBarGeometry,
     xTicks,
+    yTicks,
     plotLeft,
     plotRight,
     plotTop,
@@ -187,6 +239,7 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
       y: plotBottom + AXIS_TITLE_DY,
     },
     yTitle: words.shapValue,
+    yTitleX: Y_TITLE_X,
   };
 }
 
@@ -280,6 +333,25 @@ export function ShapScatter({
     />
   );
 
+  const activePoint = hovered === null
+    ? null
+    : [...geometry.absentPoints, ...geometry.detectedPoints]
+        .find((point) => point.sampleIndex === hovered) ?? null;
+  const tooltipLines = hovered === null || activePoint === null
+    ? []
+    : scatterTooltipLines(parsed, hovered, featureIndex, geometry.colorFeatureIndex, words);
+  const tooltip = activePoint
+    ? placeTooltip({
+        anchorX: activePoint.cx,
+        anchorY: activePoint.cy,
+        lines: tooltipLines,
+        lineHeight: TOOLTIP_LINE_HEIGHT,
+        minWidth: 160,
+        chartWidth: width,
+        chartHeight: height,
+      })
+    : null;
+
   return (
     <>
       <svg width={width} height={height} role="img"
@@ -287,6 +359,22 @@ export function ShapScatter({
       <line x1={geometry.plotLeft} x2={geometry.plotRight}
             y1={geometry.zeroRuleY} y2={geometry.zeroRuleY}
             stroke="#888888" strokeWidth={0.5} strokeDasharray="1 5" />
+      <g aria-hidden="true">
+        <line data-axis-spine="left" x1={geometry.plotLeft} x2={geometry.plotLeft}
+              y1={geometry.plotTop} y2={geometry.plotBottom} stroke="#333333" strokeWidth={1} />
+        <line data-axis-spine="bottom" x1={geometry.plotLeft} x2={geometry.plotRight}
+              y1={geometry.plotBottom} y2={geometry.plotBottom} stroke="#333333" strokeWidth={1} />
+        {geometry.yTicks.map((tick) => (
+          <g key={`y-tick-${tick.value}`}>
+            <line x1={geometry.plotLeft - 5} x2={geometry.plotLeft}
+                  y1={tick.y} y2={tick.y} stroke="#333333" strokeWidth={1} />
+            <text x={geometry.plotLeft - 8} y={tick.y}
+                  textAnchor="end" dominantBaseline="middle" fontSize={11} fill="#333333">
+              {tick.label}
+            </text>
+          </g>
+        ))}
+      </g>
       {geometry.absentLabel && (
         <text x={geometry.plotLeft + 4} y={geometry.plotBottom + 18} fontSize={11} fill="#333333">
           {geometry.absentLabel}
@@ -312,9 +400,9 @@ export function ShapScatter({
             textAnchor="middle" fontSize={13} fontStyle="italic" fill="#333333">
         {geometry.xTitle.text}
       </text>
-      <text x={14} y={(geometry.plotTop + geometry.plotBottom) / 2}
+      <text x={geometry.yTitleX} y={(geometry.plotTop + geometry.plotBottom) / 2}
             textAnchor="middle" fontSize={13} fill="#333333"
-            transform={`rotate(-90 14 ${(geometry.plotTop + geometry.plotBottom) / 2})`}>
+            transform={`rotate(-90 ${geometry.yTitleX} ${(geometry.plotTop + geometry.plotBottom) / 2})`}>
         {geometry.yTitle}
       </text>
       <text x={geometry.plotRight} y={geometry.plotTop + 4}
@@ -326,10 +414,17 @@ export function ShapScatter({
         {geometry.colorNote}
       </text>
       {geometry.colorBar && <ColorBar bar={geometry.colorBar} />}
-      {hovered !== null && (
-        <title>
-          {`${formatShapValue(parsed.values[hovered][featureIndex])}`}
-        </title>
+      {tooltip && (
+        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
+          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
+                fill="#ffffff" stroke="#cccccc" />
+          {tooltipLines.map((line, index) => (
+            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
+                  fontSize={11} fill="#222222">
+              {line}
+            </text>
+          ))}
+        </g>
       )}
       </svg>
       <ChartTable data={table} view={tableView} />

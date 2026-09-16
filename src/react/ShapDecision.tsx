@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Explanation, TableView } from "../core/types";
+import { Explanation, ParsedExplanation, TableView } from "../core/types";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { decisionLayout } from "../core/decisionLayout";
@@ -8,6 +8,21 @@ import { formatFeatureLabel, formatLevel } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { decisionTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
+import { placeTooltip } from "../core/tooltip";
+
+const TOOLTIP_LINE_HEIGHT = 15;
+
+export function decisionTooltipLines(
+  parsed: ParsedExplanation,
+  sampleIndex: number,
+  modelOutput: number,
+  words: PlotLabels,
+): string[] {
+  return [
+    parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1),
+    `${words.cumulativeShapValue}: ${formatLevel(modelOutput)}`,
+  ];
+}
 
 export type ShapDecisionProps = {
   explanation: Explanation;
@@ -39,13 +54,29 @@ export function ShapDecision({
   const [hovered, setHovered] = useState<number | null>(null);
   const words = useMemo(() => resolveLabels(labels), [labels]);
 
-  const { layout, table } = useMemo(() => {
+  const { layout, parsed, table } = useMemo(() => {
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
     const layout = decisionLayout({ parsed, width, rowHeight, maxDisplay, sampleIndices, colormap });
-    return { layout, table: decisionTableRows(layout, parsed, words) };
+    return { layout, parsed, table: decisionTableRows(layout, parsed, words) };
   }, [explanation, maxDisplay, sampleIndices, groupByGenus, classIndex, width, rowHeight, colormap,
       words]);
+
+  const activePath = hovered === null
+    ? null
+    : layout.paths.find((path) => path.sampleIndex === hovered) ?? null;
+  const activePoint = activePath?.points[activePath.points.length - 1];
+  const modelOutput = activePath?.values[activePath.values.length - 1];
+  const tooltipLines = hovered === null || modelOutput === undefined
+    ? []
+    : decisionTooltipLines(parsed, hovered, modelOutput, words);
+  const tooltip = activePoint
+    ? placeTooltip({
+        anchorX: activePoint.x, anchorY: activePoint.y, lines: tooltipLines,
+        lineHeight: TOOLTIP_LINE_HEIGHT, minWidth: 160,
+        chartWidth: width, chartHeight: layout.height,
+      })
+    : null;
 
   return (
     <>
@@ -83,6 +114,16 @@ export function ShapDecision({
             textAnchor="middle" fontSize={13} fill="#333333">
         {words.cumulativeShapValue}
       </text>
+      {tooltip && (
+        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
+          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
+                fill="#ffffff" stroke="#cccccc" />
+          {tooltipLines.map((line, index) => (
+            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
+                  fontSize={11} fill="#222222">{line}</text>
+          ))}
+        </g>
+      )}
       </svg>
       <ChartTable data={table} view={tableView} />
     </>
