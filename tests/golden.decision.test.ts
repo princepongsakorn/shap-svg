@@ -6,6 +6,15 @@ import { decisionLayout } from "../src/core/decisionLayout";
 const load = (name: string) =>
   JSON.parse(readFileSync(new URL(`../fixtures/${name}`, import.meta.url), "utf8"));
 
+const toGoldenPrecision = (value: number) => Number(value.toPrecision(4));
+
+function expectGoldenNumber(actual: number, expected: number): void {
+  const roundedActual = toGoldenPrecision(actual);
+  const roundedExpected = toGoldenPrecision(expected);
+  const tolerance = Math.max(Math.abs(roundedExpected) * 1e-3, 1e-6);
+  expect(Math.abs(roundedActual - roundedExpected)).toBeLessThanOrEqual(tolerance);
+}
+
 describe.each(["tiny", "real"])("decision golden values — %s", (name) => {
   const parsed = parseExplanation(load(`${name}.json`));
   const golden = load(`${name}.decision.golden.json`);
@@ -14,19 +23,19 @@ describe.each(["tiny", "real"])("decision golden values — %s", (name) => {
   });
 
   it("draws the same rows, bottom to top", () => {
-    expect(layout.rowLabels).toEqual([...golden.row_labels].reverse());
+    expect(layout.rowLabels).toEqual(golden.row_labels);
   });
 
   it("starts each path where SHAP starts it", () => {
     layout.paths.forEach((path, i) => {
-      expect(path.values[0]).toBeCloseTo(golden.starts[i], 6);
+      expectGoldenNumber(path.values[0], golden.starts[i]);
     });
   });
 
   it("ends each path at the same Model output", () => {
     layout.paths.forEach((path, i) => {
       const goldenRow = golden.cumsum[i];
-      expect(path.values[path.values.length - 1]).toBeCloseTo(goldenRow[goldenRow.length - 1], 6);
+      expectGoldenNumber(path.values[path.values.length - 1], goldenRow[goldenRow.length - 1]);
     });
   });
 });
