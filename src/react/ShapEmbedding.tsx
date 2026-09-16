@@ -140,15 +140,28 @@ export function ShapEmbedding({
               y1={layout.plotBottom} y2={layout.plotBottom} stroke="#333333" strokeWidth={1} />
       </g>
       {layout.colorBar && <ColorBar bar={layout.colorBar} />}
-      <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - 14}
+      <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - (layout.xMeaning ? 28 : 14)}
             textAnchor="middle" fontSize={13} fill="#333333">
         {layout.xTitle}
       </text>
-      <text x={16} y={(layout.plotTop + layout.plotBottom) / 2}
+      {layout.xMeaning && (
+        <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - 12}
+              textAnchor="middle" fontSize={11} fill="#666666">
+          {layout.xMeaning}
+        </text>
+      )}
+      <text x={layout.yMeaning ? 16 : 16} y={(layout.plotTop + layout.plotBottom) / 2}
             textAnchor="middle" fontSize={13} fill="#333333"
             transform={`rotate(-90 16 ${(layout.plotTop + layout.plotBottom) / 2})`}>
         {layout.yTitle}
       </text>
+      {layout.yMeaning && (
+        <text x={30} y={(layout.plotTop + layout.plotBottom) / 2}
+              textAnchor="middle" fontSize={11} fill="#666666"
+              transform={`rotate(-90 30 ${(layout.plotTop + layout.plotBottom) / 2})`}>
+          {layout.yMeaning}
+        </text>
+      )}
       {tooltip && (
         <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
           <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}

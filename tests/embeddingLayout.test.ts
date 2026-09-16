@@ -85,3 +85,38 @@ describe("the embedding's frame and hover detail", () => {
     expect(named[0]).toBe("a");
   });
 });
+
+describe("what the components turn out to mean", () => {
+  it("says a component tracks the total when it clearly does", () => {
+    // Contributions that grow together, so the first component is the total.
+    const tracking = parseExplanation({
+      contract_version: 1,
+      values: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]],
+      base_values: 0,
+      data: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]],
+      feature_names: ["a", "b"],
+    });
+    const l = embeddingLayout({ parsed: tracking, width: 500, height: 400, colorBy: "sum" });
+    expect(l.xMeaning).toContain("r =");
+  });
+
+  it("stays silent when no component tracks the total", () => {
+    const l = layout();
+    const said = [l.xMeaning, l.yMeaning].filter(Boolean);
+    for (const text of said) expect(text).toContain("r =");
+  });
+
+  it("never claims a meaning for a component that is orthogonal to the total", () => {
+    const tracking = parseExplanation({
+      contract_version: 1,
+      values: [[1, -1], [2, -2], [3, -3], [4, -4], [5, -5]],
+      base_values: 0,
+      data: [[1, 1], [2, 2], [3, 3], [4, 4], [5, 5]],
+      feature_names: ["a", "b"],
+    });
+    // Every Sample's total is zero here, so nothing can track it.
+    const l = embeddingLayout({ parsed: tracking, width: 500, height: 400, colorBy: "sum" });
+    expect(l.xMeaning).toBeNull();
+    expect(l.yMeaning).toBeNull();
+  });
+});

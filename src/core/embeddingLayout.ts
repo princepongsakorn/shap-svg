@@ -61,9 +61,44 @@ export type EmbeddingLayout = {
    */
   zeroX: number | null;
   zeroY: number | null;
+  /**
+   * What each component turns out to mean, said only when the data supports it.
+   * A principal component has no inherent meaning — it is whichever direction
+   * the contributions vary along most — so the chart measures whether it lines
+   * up with a Sample's summed SHAP values and stays silent when it does not.
+   */
+  xMeaning: string | null;
+  yMeaning: string | null;
 };
 
 const UNCOLOURED = "#1f77b4";
+/** Below this |r| the component is not tracking the total closely enough to say so. */
+const MEANING_MIN_R = 0.7;
+
+function correlation(a: number[], b: number[]): number {
+  const n = a.length;
+  if (n < 2) return 0;
+  let meanA = 0;
+  let meanB = 0;
+  for (let i = 0; i < n; i++) {
+    meanA += a[i];
+    meanB += b[i];
+  }
+  meanA /= n;
+  meanB /= n;
+  let cov = 0;
+  let varA = 0;
+  let varB = 0;
+  for (let i = 0; i < n; i++) {
+    const da = a[i] - meanA;
+    const db = b[i] - meanB;
+    cov += da * db;
+    varA += da * da;
+    varB += db * db;
+  }
+  if (!(varA > 0) || !(varB > 0)) return 0;
+  return cov / Math.sqrt(varA * varB);
+}
 
 export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
   const { parsed, width, height, colorBy, coords, colormap = "red_blue", colorBar = true } = input;
@@ -133,8 +168,16 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
 
   const inside = (value: number, low: number, high: number) => value > low && value < high;
 
+  const totals = parsed.values.map((row) => row.reduce((sum, value) => sum + value, 0));
+  const meaningOf = (axis: 0 | 1): string | null => {
+    const r = correlation(positions.map((position) => position[axis]), totals);
+    return Math.abs(r) >= MEANING_MIN_R ? words.componentTracksTotal(r) : null;
+  };
+
   return {
     points,
+    xMeaning: meaningOf(0),
+    yMeaning: meaningOf(1),
     zeroX: inside(0, xLow, xHigh) ? toX(0) : null,
     zeroY: inside(0, yLow, yHigh) ? toY(0) : null,
     xTitle: title(1),

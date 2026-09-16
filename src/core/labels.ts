@@ -60,6 +60,12 @@ export type PlotLabels = {
   trend: string;
   /** The caption on a chart's table view. */
   tableCaption: string;
+  /**
+   * Said under an embedding axis when that component turns out to track a
+   * Sample's summed SHAP values. `r` is the correlation, always at least the
+   * threshold the chart applies.
+   */
+  componentTracksTotal: (r: number) => string;
 };
 
 export const shapLabels: PlotLabels = {
@@ -89,6 +95,7 @@ export const shapLabels: PlotLabels = {
   weakInteraction: "no strong interaction found",
   trend: "Median trend",
   tableCaption: "Chart data",
+  componentTracksTotal: (r) => `tracks Σφ, r = ${formatFixed(r, 2)}`,
 };
 
 /** The given wording over SHAP's. A key given as undefined keeps the default. */
