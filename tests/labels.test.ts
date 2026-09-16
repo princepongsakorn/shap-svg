@@ -136,3 +136,24 @@ describe("components", () => {
     expect(render(ShapWaterfall, {})).toContain("E[f(X)] = ");
   });
 });
+
+describe("labels added in 0.3.0", () => {
+  it("defaults to SHAP's own wording", () => {
+    expect(shapLabels.absent).toBe("Absent");
+    expect(shapLabels.absentWithCount(12)).toBe("Absent (n = 12)");
+    expect(shapLabels.principalComponent(1, 0.4237)).toBe("SHAP PC1 (42% of SHAP variance)");
+    expect(shapLabels.cumulativeShapValue).toBe("Model output");
+    expect(shapLabels.clusterDistance).toBe("Clustering cutoff");
+    expect(shapLabels.interactionScore(0.6234)).toBe("interaction 0.62");
+    expect(shapLabels.weakInteraction).toBe("no strong interaction found");
+    expect(shapLabels.trend).toBe("Median trend");
+    expect(shapLabels.tableCaption).toBe("Chart data");
+  });
+
+  it("lets a caller override exactly one new key", () => {
+    const resolved = resolveLabels({ absent: "Not detected" });
+    expect(resolved.absent).toBe("Not detected");
+    expect(resolved.trend).toBe("Median trend");
+    expect(resolved.shapValue).toBe("SHAP value");
+  });
+});

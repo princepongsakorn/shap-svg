@@ -36,6 +36,24 @@ export type PlotLabels = {
    * a sum, and "count" everywhere else.
    */
   otherFeatures: (count: number, style: "sum" | "count") => string;
+  /** The scatter's band for Samples where the taxon was not detected. */
+  absent: string;
+  /** The same band's tick, carrying how many Samples are in it. */
+  absentWithCount: (count: number) => string;
+  /** An embedding axis. `index` counts from 1; `varianceRatio` is 0–1. */
+  principalComponent: (index: number, varianceRatio: number) => string;
+  /** The decision plot's x axis: where each Sample's path ends. */
+  cumulativeShapValue: string;
+  /** The clustered bar's dendrogram cutoff. */
+  clusterDistance: string;
+  /** How strongly the scatter's colour Feature interacts, 0–1. */
+  interactionScore: (score: number) => string;
+  /** Said instead, when the strongest interaction is below the threshold. */
+  weakInteraction: string;
+  /** The scatter's trend line, in its legend and its table. */
+  trend: string;
+  /** The caption on a chart's table view. */
+  tableCaption: string;
 };
 
 export const shapLabels: PlotLabels = {
@@ -53,6 +71,16 @@ export const shapLabels: PlotLabels = {
   modelOutput: "f(x)",
   otherFeatures: (count, style) =>
     style === "sum" ? `Sum of ${count} other features` : `${count} other features`,
+  absent: "Absent",
+  absentWithCount: (count) => `Absent (n = ${count})`,
+  principalComponent: (index, varianceRatio) =>
+    `SHAP PC${index} (${Math.round(varianceRatio * 100)}% of SHAP variance)`,
+  cumulativeShapValue: "Model output",
+  clusterDistance: "Clustering cutoff",
+  interactionScore: (score) => `interaction ${score.toFixed(2)}`,
+  weakInteraction: "no strong interaction found",
+  trend: "Median trend",
+  tableCaption: "Chart data",
 };
 
 /** The given wording over SHAP's. A key given as undefined keeps the default. */
