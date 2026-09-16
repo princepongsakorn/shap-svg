@@ -473,6 +473,22 @@ export function ShapScatter({
           {geometry.colorNote}
         </text>
       )}
+      {/* One light panel around the strip, its ticks and its title.
+          Apart, the rotated title sits exactly where a right-hand y axis title
+          would and a reader takes it for one — which is what happened. Boxed,
+          the three pieces read as the single key they are. */}
+      {geometry.colorBar && (
+        <rect
+          x={geometry.colorBar.x - 10}
+          y={geometry.plotTop - 10}
+          width={geometry.colorBar.right - geometry.colorBar.x + 16}
+          height={geometry.plotBottom - geometry.plotTop + 20}
+          rx={4}
+          fill="none"
+          stroke="#e5e5e5"
+          strokeWidth={1}
+        />
+      )}
       {geometry.colorBar && <ColorBar bar={geometry.colorBar} />}
       {tooltip && (
         <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>

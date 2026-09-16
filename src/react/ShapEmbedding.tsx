@@ -139,6 +139,22 @@ export function ShapEmbedding({
         <line data-axis-spine="bottom" x1={layout.plotLeft} x2={layout.plotRight}
               y1={layout.plotBottom} y2={layout.plotBottom} stroke="#333333" strokeWidth={1} />
       </g>
+      {/* One light panel around the strip, its ticks and its title.
+          Apart, the rotated title sits exactly where a right-hand y axis title
+          would and a reader takes it for one — which is what happened. Boxed,
+          the three pieces read as the single key they are. */}
+      {layout.colorBar && (
+        <rect
+          x={layout.colorBar.x - 10}
+          y={layout.plotTop - 10}
+          width={layout.colorBar.right - layout.colorBar.x + 16}
+          height={layout.plotBottom - layout.plotTop + 20}
+          rx={4}
+          fill="none"
+          stroke="#e5e5e5"
+          strokeWidth={1}
+        />
+      )}
       {layout.colorBar && <ColorBar bar={layout.colorBar} />}
       <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - (layout.xMeaning ? 28 : 14)}
             textAnchor="middle" fontSize={13} fill="#333333">
