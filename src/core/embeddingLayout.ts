@@ -1,6 +1,8 @@
 import { ParsedExplanation } from "./types";
 import { shapPca } from "./pca";
 import { ColormapName, sampleColormap } from "./colormap";
+import { colorBarLayout, ColorBarGeometry } from "./colorBar";
+import { formatFeatureLabel, formatShapValue } from "./format";
 import { PlotLabels, resolveLabels } from "./labels";
 
 /**
@@ -15,6 +17,8 @@ import { PlotLabels, resolveLabels } from "./labels";
  */
 
 const MARGIN = { left: 64, right: 24, top: 20, bottom: 52 };
+/** Room the colour bar and its rotated title need on the right. */
+const COLOR_BAR_MARGIN = 96;
 
 export type EmbeddingPoint = {
   cx: number;
@@ -33,6 +37,8 @@ export type EmbeddingLayoutInput = {
   colorBy: "sum" | "none" | number;
   /** Positions computed elsewhere — UMAP from Python, say. Skips the PCA. */
   coords?: [number, number][];
+  /** Draw the scale that says what the colour means. On unless colouring is off. */
+  colorBar?: boolean;
   colormap?: ColormapName;
   labels?: PlotLabels;
 };
@@ -45,12 +51,14 @@ export type EmbeddingLayout = {
   plotRight: number;
   plotTop: number;
   plotBottom: number;
+  /** null when nothing is being encoded by colour. */
+  colorBar: ColorBarGeometry | null;
 };
 
 const UNCOLOURED = "#1f77b4";
 
 export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
-  const { parsed, width, height, colorBy, coords, colormap = "red_blue" } = input;
+  const { parsed, width, height, colorBy, coords, colormap = "red_blue", colorBar = true } = input;
   const words = input.labels ?? resolveLabels();
 
   if (coords && coords.length !== parsed.nSamples) {
@@ -63,7 +71,8 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
   const positions = coords ?? projection!.coords;
 
   const plotLeft = MARGIN.left;
-  const plotRight = width - MARGIN.right;
+  const showColorBar = colorBar && colorBy !== "none";
+  const plotRight = width - (showColorBar ? COLOR_BAR_MARGIN : MARGIN.right);
   const plotTop = MARGIN.top;
   const plotBottom = height - MARGIN.bottom;
 
@@ -105,5 +114,36 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
       ? words.principalComponent(index, projection.varianceRatios[index - 1])
       : `SHAP PC${index}`;
 
-  return { points, xTitle: title(1), yTitle: title(2), plotLeft, plotRight, plotTop, plotBottom };
+  // Without this the reader sees a blue-to-red gradient with nothing anywhere
+  // saying what it measures, which is the one thing colour must never do.
+  const colourLabel =
+    colorBy === "sum"
+      ? words.sampleTotal
+      : typeof colorBy === "number"
+        ? `${formatFeatureLabel(parsed.featureNames[colorBy])} · ${words.shapValue}`
+        : "";
+
+  return {
+    points,
+    xTitle: title(1),
+    yTitle: title(2),
+    plotLeft,
+    plotRight,
+    plotTop,
+    plotBottom,
+    colorBar:
+      showColorBar && colourValues
+        ? colorBarLayout(
+            {
+              colormap,
+              // The actual range, not "Low" and "High": these are signed
+              // contributions and their sign is the thing worth reading.
+              tickLabels: [formatShapValue(colourLow), formatShapValue(colourHigh)],
+              label: colourLabel,
+              labelPad: 0,
+            },
+            { x: plotRight + 18, y1: plotTop, y2: plotBottom },
+          )
+        : null,
+  };
 }

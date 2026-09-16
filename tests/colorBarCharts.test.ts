@@ -7,6 +7,9 @@ import { scalarFormatterLabels } from "../src/core/colorBar";
 import { parseExplanation } from "../src/core/parse";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
+import { embeddingLayout } from "../src/core/embeddingLayout";
+import { scatterGeometry } from "../src/react/ShapScatter";
+import { shapLabels } from "../src/core/labels";
 
 const raw = {
   contract_version: 1,
@@ -99,5 +102,55 @@ describe("components", () => {
 
     const plain = renderToStaticMarkup(createElement(ShapBeeswarm, { explanation: raw, colorBar: false }));
     expect(plain).not.toContain(">High<");
+  });
+});
+
+describe("the colour scales added in 0.3.0", () => {
+  it("gives the embedding a colour bar that says what the colour measures", () => {
+    const layout = embeddingLayout({
+      parsed: explanation, width: 600, height: 400, colorBy: "sum",
+    });
+    expect(layout.colorBar).not.toBeNull();
+    expect(layout.colorBar?.label.text).toBe(shapLabels.sampleTotal);
+  });
+
+  it("names the Feature when the embedding colours by one", () => {
+    const layout = embeddingLayout({
+      parsed: explanation, width: 600, height: 400, colorBy: 1,
+    });
+    expect(layout.colorBar?.label.text).toContain("Parvimonas micra");
+  });
+
+  it("draws no embedding colour bar when nothing is encoded by colour", () => {
+    const layout = embeddingLayout({
+      parsed: explanation, width: 600, height: 400, colorBy: "none",
+    });
+    expect(layout.colorBar).toBeNull();
+  });
+
+  it("leaves the embedding room for the bar rather than drawing over it", () => {
+    const withBar = embeddingLayout({
+      parsed: explanation, width: 600, height: 400, colorBy: "sum",
+    });
+    const without = embeddingLayout({
+      parsed: explanation, width: 600, height: 400, colorBy: "none",
+    });
+    expect(withBar.plotRight).toBeLessThan(without.plotRight);
+    expect(withBar.colorBar!.x).toBeGreaterThanOrEqual(withBar.plotRight);
+  });
+
+  it("names the coloured Feature on the scatter's bar, not just 'Feature value'", () => {
+    const geometry = scatterGeometry({
+      parsed: explanation,
+      featureIndex: 0,
+      width: 600,
+      height: 400,
+      colorFeature: 1,
+      colorFeatureMinScore: 0,
+      xScale: "log",
+      trend: false,
+    });
+    expect(geometry.colorBar?.label.text).toContain("Parvimonas micra");
+    expect(geometry.colorBar?.label.text).toContain(shapLabels.featureValue);
   });
 });

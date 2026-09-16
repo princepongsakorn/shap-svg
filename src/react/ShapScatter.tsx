@@ -180,7 +180,12 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     : colorBarLayout({
         colormap,
         tickLabels: [words.featureValueLow, words.featureValueHigh],
-        label: words.featureValue,
+        // Naming the Feature here is the whole point: the colour is a *second*
+        // taxon's abundance, not the plotted one's, and a bar labelled only
+        // "Relative abundance" reads as the plotted taxon's.
+        label: colorFeatureIndex === null
+          ? words.featureValue
+          : `${formatFeatureLabel(parsed.featureNames[colorFeatureIndex])} · ${words.featureValue}`,
         labelPad: 0,
       }, { x: plotRight + 18, y1: plotTop, y2: plotBottom });
 
@@ -407,10 +412,9 @@ export function ShapScatter({
       </text>
       <text x={geometry.plotRight} y={geometry.plotTop + 4}
             textAnchor="end" fontSize={11} fill="#666666">
-        {geometry.colorFeatureLabel && (
-          <tspan fontStyle="italic">{geometry.colorFeatureLabel}</tspan>
-        )}
-        {geometry.colorFeatureLabel && geometry.colorNote ? " · " : ""}
+        {/* The Feature's name now sits on the colour bar, where the encoding
+            it explains is. Repeating it here only made the reader join two
+            pieces of text to learn one thing. */}
         {geometry.colorNote}
       </text>
       {geometry.colorBar && <ColorBar bar={geometry.colorBar} />}

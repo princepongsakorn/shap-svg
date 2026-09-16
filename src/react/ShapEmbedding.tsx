@@ -3,6 +3,7 @@ import { Explanation, ParsedExplanation, TableView } from "../core/types";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { embeddingLayout } from "../core/embeddingLayout";
+import { ColorBar } from "./ColorBar";
 import { ColormapName } from "../core/colormap";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { embeddingTableRows } from "../core/tableRows";
@@ -43,6 +44,8 @@ export type ShapEmbeddingProps = {
   width?: number;
   height?: number;
   colormap?: ColormapName;
+  /** Draw the scale that says what the colour means. */
+  colorBar?: boolean;
   tableView?: TableView;
   labels?: Partial<PlotLabels>;
   onSampleClick?: (sampleIndex: number) => void;
@@ -57,6 +60,7 @@ export function ShapEmbedding({
   width = 620,
   height = 440,
   colormap = "red_blue",
+  colorBar = true,
   tableView = "hidden",
   labels,
   onSampleClick,
@@ -72,10 +76,10 @@ export function ShapEmbedding({
         ? parsed.featureNames.indexOf(colorBy)
         : (colorBy as "sum" | "none" | number);
     const layout = embeddingLayout({
-      parsed, width, height, colorBy: resolvedColorBy, coords, colormap, labels: words,
+      parsed, width, height, colorBy: resolvedColorBy, coords, colormap, colorBar, labels: words,
     });
     return { layout, parsed, resolvedColorBy, table: embeddingTableRows(layout, parsed, words) };
-  }, [explanation, colorBy, coords, groupByGenus, classIndex, width, height, colormap, words]);
+  }, [explanation, colorBy, coords, groupByGenus, classIndex, width, height, colormap, colorBar, words]);
 
   const activePoint = hovered === null
     ? null
@@ -104,6 +108,7 @@ export function ShapEmbedding({
           style={{ cursor: onSampleClick ? "pointer" : "default" }}
         />
       ))}
+      {layout.colorBar && <ColorBar bar={layout.colorBar} />}
       <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - 14}
             textAnchor="middle" fontSize={13} fill="#333333">
         {layout.xTitle}
