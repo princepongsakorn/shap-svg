@@ -169,9 +169,11 @@ describe("scatterGeometry", () => {
     const withBar = renderToStaticMarkup(createElement(ShapScatter, { ...props, colorBar: true }));
     const withoutBar = renderToStaticMarkup(createElement(ShapScatter, { ...props, colorBar: false }));
 
+    // The bar names the Feature it encodes: the colour is a second taxon's
+    // value, and a bar labelled only "Feature value" reads as the plotted one's.
     expect(withBar).toContain("Colour feature");
-    expect(withBar).toContain('aria-label="Feature value: Low to High"');
-    expect(withoutBar).not.toContain('aria-label="Feature value: Low to High"');
+    expect(withBar).toContain('aria-label="Colour feature · Feature value: Low to High"');
+    expect(withoutBar).not.toContain("Low to High");
   });
 
   it("drops the trend line when asked", () => {
