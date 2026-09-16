@@ -4,8 +4,9 @@ import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { globalImportance, orderFeatures } from "../core/order";
 import { collapseToDisplay } from "../core/collapse";
-import { barLayout } from "../core/barLayout";
-import { formatShapValue } from "../core/format";
+import { barLayout, clusteredOrder } from "../core/barLayout";
+import { dendrogramCoords } from "../core/dendrogram";
+import { formatLevel, formatShapValue } from "../core/format";
 import { XAxis } from "./XAxis";
 import { PlotLabels, resolveLabels } from "../core/labels";
 
@@ -24,6 +25,15 @@ export type ShapBarProps = {
    * recomputes the layout each render.
    */
   labels?: Partial<PlotLabels>;
+  /**
+   * Cluster the Features and draw the tree beside the bars. `false` is today's
+   * behaviour. `"shap"` clusters on SHAP values, `"data"` on Feature values,
+   * and a matrix is taken as a SciPy linkage — the shape `shap.plots.bar`
+   * validates, so a tree computed in Python drops straight in.
+   */
+  clustering?: "shap" | "data" | number[][] | false;
+  /** SHAP's own default. */
+  clusteringCutoff?: number;
   onFeatureClick?: (featureIndex: number | null) => void;
 };
 
@@ -36,6 +46,8 @@ export function ShapBar({
   width = 720,
   rowHeight = 26,
   labels,
+  clustering = false,
+  clusteringCutoff = 0.5,
   onFeatureClick,
 }: ShapBarProps) {
   const [hovered, setHovered] = useState<number | null>(null);
@@ -45,14 +57,22 @@ export function ShapBar({
     const raw = parseExplanation(explanation, { classIndex });
     const parsed = groupByGenus ? groupExplanationByGenus(raw) : raw;
     const importance = globalImportance(parsed);
-    const order = orderFeatures(importance);
+    const importanceOrder = orderFeatures(importance);
+    const clustered =
+      clustering === false
+        ? null
+        : clusteredOrder({ parsed, importanceOrder, mode: clustering, cutoff: clusteringCutoff });
+    const order = clustered ? clustered.order : importanceOrder;
     const rows = collapseToDisplay(
       parsed.featureNames, importance, order, maxDisplay, faithfulOtherRow, words,
     );
-    return barLayout(rows, {
-      width, rowHeight, marginLeft: 260, marginRight: 90, marginTop: 8, labels: words,
+    const base = barLayout(rows, {
+      width, rowHeight, marginLeft: 260, marginRight: clustered ? 150 : 90, marginTop: 8,
+      labels: words,
     });
-  }, [groupByGenus, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight, words]);
+    return { ...base, clustered };
+  }, [groupByGenus, explanation, maxDisplay, faithfulOtherRow, classIndex, width, rowHeight,
+      words, clustering, clusteringCutoff]);
 
   return (
     <svg width={width} height={layout.height} role="img"
@@ -84,6 +104,36 @@ export function ShapBar({
           </text>
         </g>
       ))}
+      {layout.clustered && (() => {
+        const leafPositions = layout.bars
+          .filter((bar) => bar.featureIndex !== null)
+          .map((bar) => bar.centerY);
+        const segments = dendrogramCoords(leafPositions, layout.clustered.linkage)
+          .filter((s) => s.xs.every((x) => Number.isFinite(x)));
+        const heights = segments.flatMap((s) => s.ys);
+        const tallest = Math.max(1e-9, ...heights);
+        const treeLeft = width - 140;
+        const treeWidth = 110;
+        const toTreeX = (height: number) => treeLeft + (height / tallest) * treeWidth;
+        const cutoffX = toTreeX(clusteringCutoff);
+        return (
+          <g>
+            {segments.map((segment, i) => (
+              <polyline key={`tree-${i}`}
+                        points={segment.ys
+                          .map((height, k) => `${toTreeX(height)},${segment.xs[k]}`)
+                          .join(" ")}
+                        fill="none" stroke="#999999" strokeWidth={1} />
+            ))}
+            <line x1={cutoffX} x2={cutoffX} y1={layout.zeroLine.y1} y2={layout.zeroLine.y2}
+                  stroke="#cccccc" strokeWidth={1} strokeDasharray="3 3" />
+            <text x={cutoffX} y={layout.zeroLine.y1 - 2} textAnchor="middle"
+                  fontSize={10} fill="#999999">
+              {`${words.clusterDistance} = ${formatLevel(clusteringCutoff, 2)}`}
+            </text>
+          </g>
+        );
+      })()}
     </svg>
   );
 }
