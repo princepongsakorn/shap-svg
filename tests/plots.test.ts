@@ -14,7 +14,7 @@ const explanation = {
 describe("shap-svg/react — the public entry", () => {
   it("exposes the charts under Plots, named like shap.plots in Python", () => {
     expect(Object.keys(entry.Plots).sort()).toEqual([
-      "bar", "beeswarm", "embedding", "heatmap", "scatter", "waterfall",
+      "bar", "beeswarm", "decision", "embedding", "heatmap", "scatter", "waterfall",
     ]);
   });
 
