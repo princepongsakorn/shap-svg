@@ -66,6 +66,12 @@ export type PlotLabels = {
    * threshold the chart applies.
    */
   componentTracksTotal: (r: number) => string;
+  /**
+   * The colour scale's title, built from what it encodes. The word matters:
+   * a rotated title down the right edge is exactly where a second y axis would
+   * be, so without it a reader takes the scale for an axis.
+   */
+  colorScale: (what: string) => string;
 };
 
 export const shapLabels: PlotLabels = {
@@ -96,6 +102,7 @@ export const shapLabels: PlotLabels = {
   trend: "Median trend",
   tableCaption: "Chart data",
   componentTracksTotal: (r) => `tracks Σφ, r = ${formatFixed(r, 2)}`,
+  colorScale: (what) => `Colour: ${what}`,
 };
 
 /** The given wording over SHAP's. A key given as undefined keeps the default. */

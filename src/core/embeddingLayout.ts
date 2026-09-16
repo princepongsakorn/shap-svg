@@ -194,7 +194,7 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
               // The actual range, not "Low" and "High": these are signed
               // contributions and their sign is the thing worth reading.
               tickLabels: [formatShapValue(colourLow), formatShapValue(colourHigh)],
-              label: colourLabel,
+              label: words.colorScale(colourLabel),
               labelPad: 0,
             },
             { x: plotRight + 18, y1: plotTop, y2: plotBottom },

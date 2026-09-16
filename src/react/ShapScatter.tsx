@@ -222,9 +222,16 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
         // Naming the Feature here is the whole point: the colour is a *second*
         // taxon's abundance, not the plotted one's, and a bar labelled only
         // "Relative abundance" reads as the plotted taxon's.
-        label: colorFeatureIndex === null
-          ? words.featureValue
-          : `${formatFeatureLabel(parsed.featureNames[colorFeatureIndex])} · ${words.featureValue}`,
+        // Everything about the colour on the scale itself: what it encodes, and
+        // why that Feature was picked. Two separate pieces of text made the
+        // reader join them up.
+        label: words.colorScale(
+          colorFeatureIndex === null
+            ? words.featureValue
+            : `${formatFeatureLabel(parsed.featureNames[colorFeatureIndex])} · ${
+                words.featureValue
+              }${colorNote ? ` (${colorNote})` : ""}`,
+        ),
         labelPad: 0,
       }, { x: plotRight + 18, y1: plotTop, y2: plotBottom });
 
@@ -457,13 +464,15 @@ export function ShapScatter({
             transform={`rotate(-90 ${geometry.yTitleX} ${(geometry.plotTop + geometry.plotBottom) / 2})`}>
         {geometry.yTitle}
       </text>
-      <text x={geometry.plotRight} y={geometry.plotTop + 4}
-            textAnchor="end" fontSize={11} fill="#666666">
-        {/* The Feature's name now sits on the colour bar, where the encoding
-            it explains is. Repeating it here only made the reader join two
-            pieces of text to learn one thing. */}
-        {geometry.colorNote}
-      </text>
+      {/* No floating note: what the colour means, and why that Feature was
+          chosen, both live on the colour scale itself. What is left up here is
+          only the case where nothing could be coloured at all. */}
+      {geometry.colorFeatureIndex === null && geometry.colorNote && (
+        <text x={geometry.plotRight} y={geometry.plotTop + 4}
+              textAnchor="end" fontSize={11} fill="#666666">
+          {geometry.colorNote}
+        </text>
+      )}
       {geometry.colorBar && <ColorBar bar={geometry.colorBar} />}
       {tooltip && (
         <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>

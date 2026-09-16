@@ -111,7 +111,9 @@ describe("the colour scales added in 0.3.0", () => {
       parsed: explanation, width: 600, height: 400, colorBy: "sum",
     });
     expect(layout.colorBar).not.toBeNull();
-    expect(layout.colorBar?.label.text).toBe(shapLabels.sampleTotal);
+    // The word "Colour" is the point: a rotated title down the right edge is
+    // where a second y axis would be, and a reader took it for one.
+    expect(layout.colorBar?.label.text).toBe(shapLabels.colorScale(shapLabels.sampleTotal));
   });
 
   it("names the Feature when the embedding colours by one", () => {
@@ -152,5 +154,6 @@ describe("the colour scales added in 0.3.0", () => {
     });
     expect(geometry.colorBar?.label.text).toContain("Parvimonas micra");
     expect(geometry.colorBar?.label.text).toContain(shapLabels.featureValue);
+    expect(geometry.colorBar?.label.text.startsWith("Colour:")).toBe(true);
   });
 });

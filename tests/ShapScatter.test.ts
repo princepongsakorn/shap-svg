@@ -173,7 +173,9 @@ describe("scatterGeometry", () => {
     // The bar names the Feature it encodes: the colour is a second taxon's
     // value, and a bar labelled only "Feature value" reads as the plotted one's.
     expect(withBar).toContain("Colour feature");
-    expect(withBar).toContain('aria-label="Colour feature · Feature value: Low to High"');
+    // The scale names what it encodes and says it is a colour scale, because
+    // a rotated title down the right edge otherwise reads as a second y axis.
+    expect(withBar).toContain('aria-label="Colour: Colour feature · Feature value: Low to High"');
     expect(withoutBar).not.toContain("Low to High");
   });
 
