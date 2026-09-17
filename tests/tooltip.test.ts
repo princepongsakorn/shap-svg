@@ -5,7 +5,7 @@ import { placeTooltip, runsToText } from "../src/core/tooltip";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { ShapWaterfall } from "../src/react/ShapWaterfall";
-import { scatterTooltipLines } from "../src/react/ShapScatter";
+import { scatterTooltipLines } from "../src/core/scatterLayout";
 import { embeddingTooltipLines } from "../src/react/ShapEmbedding";
 import { decisionTooltipLines } from "../src/react/ShapDecision";
 import { parseExplanation } from "../src/core/parse";

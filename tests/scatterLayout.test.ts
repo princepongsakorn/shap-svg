@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { parseExplanation } from "../src/core/parse";
-import { binnedMedianTrend, logDomain, scatterPoints } from "../src/core/scatterLayout";
-import { wrapToWidth } from "../src/react/ShapScatter";
+import {
+  binnedMedianTrend,
+  logDomain,
+  scatterPoints,
+  wrapToWidth,
+} from "../src/core/scatterLayout";
 
 const parsed = parseExplanation({
   contract_version: 1,

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { Plots } from "../react";
-import { scatterGeometry } from "../src/react/ShapScatter";
+import { scatterGeometry } from "../src/core/scatterLayout";
 import { parseExplanation } from "../src/core/parse";
 import { resolveLabels, shapLabels } from "../src/core/labels";
 import { createElement } from "react";

@@ -8,7 +8,7 @@ import { parseExplanation } from "../src/core/parse";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { embeddingLayout } from "../src/core/embeddingLayout";
-import { scatterGeometry } from "../src/react/ShapScatter";
+import { scatterGeometry } from "../src/core/scatterLayout";
 import { shapLabels } from "../src/core/labels";
 
 const raw = {
