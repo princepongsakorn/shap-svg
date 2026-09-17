@@ -5,6 +5,8 @@
  * The defaults are SHAP 0.49.1's own wording: a chart given no labels reads the
  * way SHAP's figures do.
  */
+import { formatFixed } from "./format";
+
 export type PlotLabels = {
   /** The value itself, as the beeswarm tooltip names it. */
   shapValue: string;
@@ -30,12 +32,52 @@ export type PlotLabels = {
   baseValue: string;
   /** The waterfall's end point, f(x). */
   modelOutput: string;
+  /** Direction of positive SHAP values in the force plot. */
+  higher: string;
+  /** Direction of negative SHAP values in the force plot. */
+  lower: string;
   /**
    * The row standing in for every Feature not shown. `style` is "sum" for the
    * bar, beeswarm and heatmap row in faithfulOtherRow mode, which SHAP titles as
    * a sum, and "count" everywhere else.
    */
   otherFeatures: (count: number, style: "sum" | "count") => string;
+  /** The scatter's band for Samples where the taxon was not detected. */
+  absent: string;
+  /** The same band's tick, carrying how many Samples are in it. */
+  absentWithCount: (count: number) => string;
+  /** An embedding axis. `index` counts from 1; `varianceRatio` is 0–1. */
+  principalComponent: (index: number, varianceRatio: number) => string;
+  /** The decision plot's x axis: where each Sample's path ends. */
+  cumulativeShapValue: string;
+  /** The clustered bar's dendrogram cutoff. */
+  clusterDistance: string;
+  /** How strongly the scatter's colour Feature interacts, 0–1. */
+  interactionScore: (score: number) => string;
+  /** Said instead, when the strongest interaction is below the threshold. */
+  weakInteraction: string;
+  /** The scatter's trend line, in its legend and its table. */
+  trend: string;
+  /** The caption on a chart's table view. */
+  tableCaption: string;
+  /**
+   * Said under an embedding axis when that component turns out to track a
+   * Sample's summed SHAP values. `r` is the correlation, always at least the
+   * threshold the chart applies.
+   */
+  componentTracksTotal: (r: number) => string;
+  /**
+   * The colour scale's title, built from what it encodes. The word matters:
+   * a rotated title down the right edge is exactly where a second y axis would
+   * be, so without it a reader takes the scale for an axis.
+   */
+  colorScale: (what: string) => string;
+  /**
+   * An embedding axis whose positions came from outside the chart, where a
+   * variance share would be meaningless — and where calling the axis a
+   * principal component would be a claim the chart cannot make.
+   */
+  suppliedComponent: (index: number) => string;
 };
 
 export const shapLabels: PlotLabels = {
@@ -51,8 +93,23 @@ export const shapLabels: PlotLabels = {
   sampleFallback: (sampleNumber) => `Sample ${sampleNumber}`,
   baseValue: "E[f(X)]",
   modelOutput: "f(x)",
+  higher: "higher",
+  lower: "lower",
   otherFeatures: (count, style) =>
     style === "sum" ? `Sum of ${count} other features` : `${count} other features`,
+  absent: "Absent",
+  absentWithCount: (count) => `Absent (n = ${count})`,
+  principalComponent: (index, varianceRatio) =>
+    `SHAP PC${index} (${formatFixed(varianceRatio * 100, 0)}% of SHAP variance)`,
+  cumulativeShapValue: "Model output",
+  clusterDistance: "Clustering cutoff",
+  interactionScore: (score) => `interaction ${formatFixed(score, 2)}`,
+  weakInteraction: "no strong interaction found",
+  trend: "Median trend",
+  tableCaption: "Chart data",
+  componentTracksTotal: (r) => `tracks Σφ, r = ${formatFixed(r, 2)}`,
+  colorScale: (what) => `Colour: ${what}`,
+  suppliedComponent: (index) => `Dimension ${index}`,
 };
 
 /** The given wording over SHAP's. A key given as undefined keeps the default. */

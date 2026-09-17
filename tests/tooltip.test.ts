@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { placeTooltip } from "../src/core/tooltip";
+import { placeTooltip, runsToText } from "../src/core/tooltip";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { ShapWaterfall } from "../src/react/ShapWaterfall";
+import { scatterTooltipLines } from "../src/core/scatterLayout";
+import { embeddingTooltipLines } from "../src/react/ShapEmbedding";
+import { decisionTooltipLines } from "../src/react/ShapDecision";
+import { parseExplanation } from "../src/core/parse";
+import { resolveLabels } from "../src/core/labels";
 
 const box = {
   lines: ["Bacteroides dorei", "SHAP value: +0.012", "Feature value: 0.0042"],
@@ -71,5 +76,62 @@ describe("accessible names use the chart's own words", () => {
     expect(
       renderToStaticMarkup(createElement(ShapWaterfall, { explanation: labelled, sampleIndex: 1 })),
     ).toContain('aria-label="SHAP value of each feature for sample_id: S-18"');
+  });
+});
+
+describe("interactive chart tooltip lines", () => {
+  const parsed = parseExplanation({
+    contract_version: 1,
+    values: [[-0.125, 0.25], [0.375, -0.5]],
+    base_values: [0.4, 0.6],
+    data: [[0, 2.5], [0.75, 4]],
+    feature_names: ["Plotted_feature", "Colour_feature"],
+    sample_labels: ["S-17", "S-18"],
+  });
+  const words = resolveLabels();
+
+  it("scatter puts the two taxa together, then the contribution", () => {
+    // The contribution used to sit between them, which made the box read as
+    // three unrelated facts rather than a taxon, its partner, and the effect.
+    expect(scatterTooltipLines(parsed, 1, 0, 1, words).map(runsToText)).toEqual([
+      "S-18",
+      "Plotted feature: 0.75",
+      "Colour feature: 4",
+      "SHAP value: +0.375",
+    ]);
+  });
+
+  it("scatter italicises both taxon names and nothing else", () => {
+    const lines = scatterTooltipLines(parsed, 1, 0, 1, words);
+    const italic = lines.flat().filter((run) => run.italic).map((run) => run.text);
+    expect(italic).toEqual(["Plotted feature", "Colour feature"]);
+  });
+
+  it("scatter says absent instead of zero for an undetected Sample", () => {
+    expect(scatterTooltipLines(parsed, 0, 0, 1, words).map(runsToText)).toContain("Plotted feature: Absent");
+    expect(scatterTooltipLines(parsed, 0, 0, 1, words).map(runsToText)).not.toContain("Plotted feature: 0");
+  });
+
+  it("embedding names the Sample and the quantity used for colour", () => {
+    // The box names the Sample, where its prediction landed, how far it moved
+    // to get there, and the Features that moved it — a point carrying one
+    // number and no reason is what this replaced.
+    const summary = embeddingTooltipLines(parsed, 0, "sum", words).map(runsToText);
+    expect(summary[0]).toBe("S-17");
+    expect(summary[1]).toContain("f(x)");
+    expect(summary[2]).toBe("Σφ: +0.125");
+    expect(summary.length).toBeGreaterThan(3);
+
+    const coloured = embeddingTooltipLines(parsed, 1, 1, words).map(runsToText);
+    expect(coloured[0]).toBe("S-18");
+    expect(coloured).toContain("Colour feature SHAP value: −0.5");
+  });
+
+  it("decision names an unlabelled Sample and its Model output", () => {
+    const unlabelled = { ...parsed, sampleLabels: undefined };
+    expect(decisionTooltipLines(unlabelled, 1, 0.475, words).map(runsToText)).toEqual([
+      "Sample 2",
+      "Model output: 0.475",
+    ]);
   });
 });

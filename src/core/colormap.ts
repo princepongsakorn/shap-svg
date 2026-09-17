@@ -36,3 +36,6 @@ export function sampleColormap(name: ColormapName, t: number): string {
   const blue = channel(lower, 5) + (channel(upper, 5) - channel(lower, 5)) * fraction;
   return `#${hexByte(red)}${hexByte(green)}${hexByte(blue)}`;
 }
+
+/** The one hue a chart uses when nothing is being encoded by colour. */
+export const UNCOLOURED = "#1f77b4";

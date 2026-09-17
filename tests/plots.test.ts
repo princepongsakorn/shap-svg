@@ -13,7 +13,9 @@ const explanation = {
 
 describe("shap-svg/react — the public entry", () => {
   it("exposes the charts under Plots, named like shap.plots in Python", () => {
-    expect(Object.keys(entry.Plots).sort()).toEqual(["bar", "beeswarm", "heatmap", "waterfall"]);
+    expect(Object.keys(entry.Plots).sort()).toEqual([
+      "bar", "beeswarm", "decision", "embedding", "force", "heatmap", "scatter", "waterfall",
+    ]);
   });
 
   it("no longer exports the Shap-prefixed component names", () => {
@@ -24,8 +26,9 @@ describe("shap-svg/react — the public entry", () => {
 
   it("renders every chart through its Plots member", () => {
     for (const [name, component] of Object.entries(entry.Plots)) {
+      const props = name === "scatter" ? { explanation, feature: 0 } : { explanation };
       const svg = renderToStaticMarkup(
-        createElement(component as ComponentType<{ explanation: typeof explanation }>, { explanation }),
+        createElement(component as ComponentType<typeof props>, props),
       );
       expect(svg.startsWith("<svg"), `Plots.${name}`).toBe(true);
     }

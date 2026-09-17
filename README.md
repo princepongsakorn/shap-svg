@@ -1,9 +1,9 @@
 # shap-svg
 
 `shap-svg` is a browser rendering layer for the [`shap.plots`](https://shap.readthedocs.io/en/latest/api.html#plots)
-API. It reimplements `shap.plots.bar`, `shap.plots.beeswarm`, `shap.plots.heatmap` and
-`shap.plots.waterfall` as interactive SVG charts, exposed as React components through `shap-svg/react`,
-so web applications can present SHAP explanations without server-side matplotlib rendering.
+API. It reimplements eight SHAP plots as interactive SVG charts, exposed as React components through
+`shap-svg/react`, so web applications can present SHAP explanations without server-side matplotlib
+rendering.
 
 It is a rendering library only. SHAP values must still be computed with the
 [`shap`](https://github.com/shap/shap) Python package and delivered to the client as JSON.
@@ -53,10 +53,14 @@ affiliated with the SHAP authors.
 
 | Component | SHAP counterpart | Shows |
 | --- | --- | --- |
-| `Plots.bar` | `shap.plots.bar` | mean(\|SHAP value\|) per feature across samples |
-| `Plots.beeswarm` | `shap.plots.beeswarm` | one dot per sample per feature, coloured by feature value |
-| `Plots.heatmap` | `shap.plots.heatmap` | samples × features coloured by SHAP value, with the f(x) line above |
-| `Plots.waterfall` | `shap.plots.waterfall` | how one sample's prediction is built from E[f(X)] to f(x) |
+| [`Plots.bar`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/BAR.md) | `shap.plots.bar` | mean(\|SHAP value\|) per Feature across Samples |
+| `Plots.beeswarm` | `shap.plots.beeswarm` | one dot per Sample per Feature, coloured by Feature value |
+| `Plots.heatmap` | `shap.plots.heatmap` | Samples × Features coloured by SHAP value, with the Model output line above |
+| `Plots.waterfall` | `shap.plots.waterfall` | how one Sample's prediction is built from the Base value to the Model output |
+| [`Plots.scatter`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/SCATTER.md) | `shap.plots.scatter` | one Feature's value against its SHAP value across Samples |
+| [`Plots.embedding`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/EMBEDDING.md) | `shap.plots.embedding` | Samples positioned by similarity between their SHAP value vectors |
+| [`Plots.decision`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/DECISION.md) | `shap.plots.decision` | cumulative Feature effects from the Base value to each Sample's Model output |
+| [`Plots.force`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/FORCE.md) | `shap.plots.force` | one Sample's positive and negative Feature effects in a compact row |
 
 Every chart is a pure component: all state that changes what is drawn arrives through props, so the
 host application owns its own controls. The only internal state is hover highlighting.
@@ -149,7 +153,20 @@ export function ExplanationView() {
 ```
 
 The charts are named the way `shap` names them in Python: `shap.plots.bar` becomes `<Plots.bar />`.
-`Plots` brings all four charts into your bundle, even if a page draws one — about 30 KB minified.
+`Plots` contains all eight charts:
+
+```ts
+Plots.bar;
+Plots.beeswarm;
+Plots.heatmap;
+Plots.waterfall;
+Plots.scatter;
+Plots.embedding;
+Plots.decision;
+Plots.force;
+```
+
+One `Plots` import brings all eight into your bundle even if a page draws one.
 
 From here every control — how many features, grouping, sorting, precision — is a prop. Changing one
 redraws from the payload already in memory; nothing goes back to the server.
@@ -188,30 +205,68 @@ Field names follow `shap.Explanation`, so a Python service can serialise one dir
 
 ## Props
 
-Shared by all four charts:
+Shared by all eight charts:
 
 | Prop | Default | |
 | --- | --- | --- |
 | `explanation` | — | the payload above |
-| `maxDisplay` | `10` | features shown before the rest collapse into one "other features" row |
-| `faithfulOtherRow` | `false` | `true` reproduces SHAP's own behaviour, where the last displayed row absorbs the feature ranked `maxDisplay` |
 | `groupByGenus` | `false` | sum `Genus_species` features into their genus first |
 | `classIndex` | `1` | which output to draw for multi-output explanations |
-| `width` | `720` | SVG width in pixels |
-| `rowHeight` | per chart | pixels per feature row |
+| `width` | per chart | SVG width in pixels |
 | `labels` | SHAP's wording | text the chart draws; see [Wording](#wording) |
-| `onFeatureClick` | — | called with the feature index, or `null` for the "other" row |
 
 Per chart:
 
 | Chart | Prop | Default | |
 | --- | --- | --- | --- |
+| `Plots.bar`, `Plots.beeswarm`, `Plots.heatmap`, `Plots.waterfall`, `Plots.force` | `maxDisplay` | `10` | Features shown before the rest collapse into an Other features row |
+| `Plots.decision` | `maxDisplay` | `15` | maximum number of Feature rows |
+| `Plots.bar`, `Plots.beeswarm`, `Plots.heatmap`, `Plots.waterfall`, `Plots.force` | `faithfulOtherRow` | `false` | reproduce SHAP's boundary-row collapse when `true` |
+| `Plots.bar`, `Plots.heatmap`, `Plots.decision` | `rowHeight` | `26` | pixels per Feature row |
+| `Plots.beeswarm` | `rowHeight` | `28` | pixels per Feature row |
+| `Plots.waterfall` | `rowHeight` | `30` | pixels per Feature row |
 | `Plots.beeswarm`, `Plots.heatmap` | `rowSort` | `"importance"` | `"importance"`, `"name"` or `"featureValue"`; reorders the rows shown, never which rows are shown |
 | `Plots.beeswarm`, `Plots.heatmap` | `colorBar` | `true` | SHAP's colour bar right of the plot — Low to High feature value on the beeswarm, the SHAP value range on the heatmap. The plot narrows when the right margin cannot hold it |
 | `Plots.beeswarm` | `seed`, `dotRadius` | `0`, `3` | jitter is seeded, so a chart is identical on every render |
 | `Plots.heatmap` | `onSampleClick` | — | called with the column's `sample_ids` entry |
 | `Plots.waterfall` | `sampleIndex` | `0` | which sample to explain |
 | `Plots.waterfall` | `decimals` | `2` | `2`, `3`, `4` or `"percent"`; display only |
+| `Plots.scatter` | `feature` | — | required Feature name or zero-based index |
+| `Plots.scatter` | `colorFeature`, `colorFeatureMinScore` | `"auto"`, `0.2` | colour Feature selection and minimum automatic interaction score |
+| `Plots.scatter` | `xScale`, `trend` | `"log"`, `true` | Feature-value scale and binned-median trend |
+| `Plots.embedding` | `colorBy`, `coords` | `"sum"`, — | colour source and optional external Sample coordinates |
+| `Plots.decision` | `sampleIndices` | every Sample | zero-based Sample indices to draw |
+| `Plots.scatter`, `Plots.embedding`, `Plots.decision` | `colormap` | `"red_blue"` | `"red_blue"` or `"red_white_blue"` |
+| `Plots.scatter`, `Plots.embedding`, `Plots.decision`, `Plots.force` | `tableView` | `"hidden"` | `"hidden"`, `"visible"`, or `"none"` |
+
+The complete props and examples for the new charts are in [Scatter](https://github.com/princepongsakorn/shap-svg/blob/main/docs/SCATTER.md),
+[Embedding](https://github.com/princepongsakorn/shap-svg/blob/main/docs/EMBEDDING.md), [Decision](https://github.com/princepongsakorn/shap-svg/blob/main/docs/DECISION.md), and [Force](https://github.com/princepongsakorn/shap-svg/blob/main/docs/FORCE.md).
+
+## Beyond SHAP
+
+The browser charts add six deliberate improvements to the behaviour in SHAP's Python plotters:
+
+- **A neutral-midpoint colormap option.** The `red_blue` table used by `_scatter.py` and
+  `_embedding.py` has its darkest step at the midpoint: OKLab lightness 0.512, against 0.636 and
+  0.635 at the poles. That gives a Feature that contributed nothing the greatest visual weight.
+  `red_white_blue` has the correct lightness shape and is available through `colormap`; `red_blue`
+  remains the default for fidelity.
+- **A symmetric decision-plot axis.** `_decision.py` carries a comment promising a symmetric axis
+  above a branch that does not always deliver one. Because its colour scale is clamped to those
+  limits, the asymmetry moves the neutral colour away from the Base value. `Plots.decision` keeps
+  equal reach on both sides.
+- **The interaction score is shown.** `_scatter.py` takes the first result from
+  `approximate_interactions` without asking how strong it is, so colour chosen from noise looks like
+  colour chosen from a real interaction. `Plots.scatter` shows the score normalised into 0–1 and
+  declines to colour below `colorFeatureMinScore`.
+- **The Genus view.** `groupByGenus` switches all four new charts from the Species view to the Genus
+  view before layout.
+- **A dose–response trend line.** `Plots.scatter` draws a binned median over detected Samples only;
+  `_scatter.py` has no equivalent.
+- **A table view.** All four new charts put their numbers in a real table by default, visually hidden
+  until `tableView="visible"`; unlike the matplotlib images produced by `_scatter.py`,
+  `_embedding.py`, `_decision.py`, and `_force_matplotlib.py`, the values are reachable by a screen
+  reader and text search.
 
 ## Wording
 

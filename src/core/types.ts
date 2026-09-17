@@ -64,3 +64,12 @@ export class InvalidExplanationError extends Error {
     this.name = "InvalidExplanationError";
   }
 }
+
+/**
+ * How a chart publishes its own numbers as a table.
+ *
+ * "hidden" puts a real <table> in the DOM, clipped to a 1px box, so a screen
+ * reader and a text search find the values a sighted reader gets from the SVG.
+ * "visible" shows it below the chart. "none" omits it.
+ */
+export type TableView = "hidden" | "visible" | "none";

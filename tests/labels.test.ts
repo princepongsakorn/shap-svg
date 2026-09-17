@@ -12,6 +12,7 @@ import { ShapBar } from "../src/react/ShapBar";
 import { ShapBeeswarm } from "../src/react/ShapBeeswarm";
 import { ShapHeatmap } from "../src/react/ShapHeatmap";
 import { ShapWaterfall } from "../src/react/ShapWaterfall";
+import { ShapForce } from "../src/react/ShapForce";
 
 const raw = {
   contract_version: 1,
@@ -134,5 +135,36 @@ describe("components", () => {
     expect(render(ShapBar, { labels: research })).toContain("Mean absolute contribution");
     expect(render(ShapWaterfall, { labels: research })).toContain("Average prediction = ");
     expect(render(ShapWaterfall, {})).toContain("E[f(X)] = ");
+  });
+});
+
+describe("labels added in 0.3.0", () => {
+  it("defaults to SHAP's own wording", () => {
+    expect(shapLabels.absent).toBe("Absent");
+    expect(shapLabels.absentWithCount(12)).toBe("Absent (n = 12)");
+    expect(shapLabels.principalComponent(1, 0.4237)).toBe("SHAP PC1 (42% of SHAP variance)");
+    expect(shapLabels.cumulativeShapValue).toBe("Model output");
+    expect(shapLabels.clusterDistance).toBe("Clustering cutoff");
+    expect(shapLabels.interactionScore(0.6234)).toBe("interaction 0.62");
+    expect(shapLabels.weakInteraction).toBe("no strong interaction found");
+    expect(shapLabels.trend).toBe("Median trend");
+    expect(shapLabels.tableCaption).toBe("Chart data");
+    expect(shapLabels.higher).toBe("higher");
+    expect(shapLabels.lower).toBe("lower");
+  });
+
+  it("lets a caller override exactly one new key", () => {
+    const resolved = resolveLabels({ absent: "Not detected" });
+    expect(resolved.absent).toBe("Not detected");
+    expect(resolved.trend).toBe("Median trend");
+    expect(resolved.shapValue).toBe("SHAP value");
+  });
+
+  it("force draws translatable direction labels either side of the Model output", () => {
+    const svg = renderToStaticMarkup(createElement(ShapForce, {
+      explanation: raw, labels: { higher: "up", lower: "down" },
+    }));
+    expect(svg).toContain(">up</text>");
+    expect(svg).toContain(">down</text>");
   });
 });

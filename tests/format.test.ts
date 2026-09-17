@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { formatShapValue, formatFeatureLabel, formatLevel } from "../src/core/format";
+import { formatShapValue, formatFeatureLabel, formatFixed } from "../src/core/format";
+import { formatLevel } from "../src/core/format";
+
+describe("formatFixed", () => {
+  it("formats an unsigned value to a fixed number of decimal places", () => {
+    expect(formatFixed(0.6234, 2)).toBe("0.62");
+    expect(formatFixed(42.37, 0)).toBe("42");
+  });
+});
 
 describe("formatShapValue", () => {
   it("keeps three significant figures for ordinary magnitudes", () => {

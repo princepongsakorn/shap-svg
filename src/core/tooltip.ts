@@ -1,5 +1,11 @@
-/** Average advance of one glyph of the 11 px tooltip text. Widths are estimated, never measured. */
-const CHAR_PX = 6.5;
+/**
+ * Average advance of one glyph, by text size. Widths are estimated, never
+ * measured: measuring needs a DOM, and these charts render on the server too.
+ *
+ * `body` is the 11-12px text of hover boxes and segment labels; `axis` is the
+ * 11px of tick labels, which sit tighter because they are mostly digits.
+ */
+export const GLYPH_PX = { body: 6.5, axis: 5.6 } as const;
 const PADDING_X = 7;
 /** Gap between the pointer and the box. */
 const OFFSET = 8;
@@ -25,7 +31,7 @@ export function placeTooltip(opts: {
 }): TooltipBox {
   const { anchorX, anchorY, lines, lineHeight, minWidth, chartWidth, chartHeight } = opts;
   const longest = lines.reduce((max, line) => Math.max(max, line.length), 0);
-  const width = Math.max(minWidth, longest * CHAR_PX + 2 * PADDING_X);
+  const width = Math.max(minWidth, longest * GLYPH_PX.body + 2 * PADDING_X);
   const height = lines.length * lineHeight + lineHeight * 0.6;
 
   const right = anchorX + OFFSET;
@@ -33,3 +39,25 @@ export function placeTooltip(opts: {
   const y = Math.max(0, Math.min(anchorY - RAISE, chartHeight - height));
   return { x, y, width, height };
 }
+
+
+/**
+ * A run of a hover-box line.
+ *
+ * A line such as `Fusobacterium nucleatum: 1e-4` needs the taxon's name in
+ * italics and the number upright, so it cannot be one string with one style.
+ * Every chart's hover box builds lines out of these.
+ */
+export type TooltipRun = { text: string; italic?: boolean };
+
+/** The plain text of a line — for width estimates, aria text and tests. */
+export const runsToText = (runs: TooltipRun[]): string => runs.map((run) => run.text).join("");
+
+/** A taxon's name and a value, the name italic as a scientific name always is. */
+export const namedValue = (name: string, value: string): TooltipRun[] => [
+  { text: name, italic: true },
+  { text: `: ${value}` },
+];
+
+/** Height of one line of a hover box, shared so every chart's box lines up. */
+export const TOOLTIP_LINE_HEIGHT = 15;

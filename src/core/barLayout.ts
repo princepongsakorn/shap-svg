@@ -1,5 +1,12 @@
-import { DisplayRows } from "./types";
+import { DisplayRows, ParsedExplanation } from "./types";
 import { PlotLabels, shapLabels } from "./labels";
+import {
+  averageLinkage,
+  copheneticDistances,
+  correlationDistances,
+  leafOrder,
+  relaxSortOrder,
+} from "./hclust";
 import {
   AXIS_TITLE_DY,
   AxisSpine,
@@ -12,6 +19,85 @@ import {
 
 export const POSITIVE_COLOR = "#ff0051";
 export const NEGATIVE_COLOR = "#008bfb";
+
+/**
+ * How many Features the clustering is computed over.
+ *
+ * Not "the displayed rows": switching clustering on changes which rows are
+ * displayed, because `get_sort_order` relaxes the importance order towards the
+ * tree, so computing the tree from the displayed rows would be circular. A
+ * fixed pool of the 50 most important Features is well above any usable
+ * `maxDisplay`, and at 50 x 500 the correlation matrix is about 1.25M
+ * multiply-accumulates.
+ */
+export const CLUSTERING_POOL = 50;
+
+export type ClusteringMode = "shap" | "data" | number[][];
+
+export type ClusteredOrderInput = {
+  parsed: ParsedExplanation;
+  /** Feature indices, descending by mean |SHAP value|. */
+  importanceOrder: number[];
+  mode: ClusteringMode;
+  cutoff: number;
+};
+
+/**
+ * The row order and the tree to draw beside it.
+ *
+ * Row merging is deliberately not implemented: SHAP fuses two Features into one
+ * row labelled "A + B" when the display cut falls inside a tight cluster, which
+ * interacts with the Other features row in a way that needs its own decision.
+ * The cut is simply taken, and the dendrogram shows a connection crossing it.
+ */
+export function clusteredOrder(input: ClusteredOrderInput): {
+  order: number[];
+  linkage: number[][];
+} {
+  const { parsed, importanceOrder, mode, cutoff } = input;
+  // A supplied matrix sizes its own pool, and its leaf `i` is taken to be the
+  // `i`-th most important Feature by mean |SHAP value|. That is the order a
+  // Python-side clustering over the same top-K produces, and there is no way to
+  // check it from the matrix alone — a producer that ordered its leaves
+  // differently would be mislabelled here in silence. When the Python path
+  // lands it should send its Feature indices alongside the matrix so this can
+  // be verified rather than assumed.
+  const poolSize = Array.isArray(mode) ? mode.length + 1 : CLUSTERING_POOL;
+  const pool = importanceOrder.slice(0, Math.min(poolSize, importanceOrder.length));
+
+  let linkage: number[][];
+  if (Array.isArray(mode)) {
+    for (const row of mode) {
+      if (row.length !== 4) {
+        throw new RangeError("a clustering matrix must have rows of width 4");
+      }
+    }
+    linkage = mode;
+  } else {
+    const source = mode === "shap" ? parsed.values : parsed.data;
+    const columns = pool.map((j) => source.map((row) => row[j]));
+    linkage = averageLinkage(correlationDistances(columns));
+  }
+
+  if (linkage.length === 0) return { order: importanceOrder, linkage };
+
+  const importanceWithinPool = pool.map((_, position) => position);
+  const meanAbs = pool.map((j) => {
+    let sum = 0;
+    for (const row of parsed.values) sum += Math.abs(row[j]);
+    return sum / parsed.nSamples;
+  });
+
+  const clusterPositions = leafOrder(linkage, meanAbs);
+  const relaxed = relaxSortOrder(
+    copheneticDistances(linkage), clusterPositions, cutoff, importanceWithinPool,
+  );
+
+  // Back to Feature indices, then the Features outside the pool in their
+  // original importance order.
+  const order = [...relaxed.map((position) => pool[position]), ...importanceOrder.slice(pool.length)];
+  return { order, linkage };
+}
 
 /** shap/plots/_bar.py:259 — total_width 0.7 of the row pitch. */
 const BAR_THICKNESS_RATIO = 0.7;
