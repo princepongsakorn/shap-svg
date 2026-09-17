@@ -1,4 +1,5 @@
 import { ParsedExplanation } from "./types";
+import { sampleDisplayName } from "./parse";
 import { ScatterSplit } from "./scatterLayout";
 import { ForceLayout } from "./forceLayout";
 import { DecisionLayout } from "./decisionLayout";
@@ -20,8 +21,6 @@ export type ChartTable = { caption: string; columns: TableCell[]; rows: TableCel
 /** A taxon's name, which is italic here as it is everywhere else. */
 const taxon = (name: string): TableCell => ({ text: formatFeatureLabel(name), italic: true });
 
-const sampleName = (parsed: ParsedExplanation, index: number, words: PlotLabels) =>
-  parsed.sampleLabels?.[index] ?? words.sampleFallback(index + 1);
 
 export function scatterTableRows(
   parsed: ParsedExplanation,
@@ -33,7 +32,7 @@ export function scatterTableRows(
   const rows = [...split.absent, ...split.detected]
     .sort((a, b) => a.sampleIndex - b.sampleIndex)
     .map((point) => [
-      sampleName(parsed, point.sampleIndex, words),
+      sampleDisplayName(parsed, point.sampleIndex, words),
       point.value > 0 ? formatLevel(point.value) : words.absent,
       formatShapValue(point.shap),
     ]);
@@ -53,7 +52,7 @@ export function embeddingTableRows(
     caption: words.tableCaption,
     columns: ["Sample", layout.xTitle, layout.yTitle],
     rows: layout.points.map((point) => [
-      sampleName(parsed, point.sampleIndex, words),
+      sampleDisplayName(parsed, point.sampleIndex, words),
       formatLevel(point.coordinates[0]),
       formatLevel(point.coordinates[1]),
     ]),
@@ -69,7 +68,7 @@ export function decisionTableRows(
     caption: words.tableCaption,
     columns: ["Sample", words.baseValue, ...layout.rowLabels.map(taxon)],
     rows: layout.paths.map((path) => [
-      sampleName(parsed, path.sampleIndex, words),
+      sampleDisplayName(parsed, path.sampleIndex, words),
       ...path.values.map((value) => formatLevel(value)),
     ]),
   };

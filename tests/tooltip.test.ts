@@ -129,7 +129,7 @@ describe("interactive chart tooltip lines", () => {
 
   it("decision names an unlabelled Sample and its Model output", () => {
     const unlabelled = { ...parsed, sampleLabels: undefined };
-    expect(decisionTooltipLines(unlabelled, 1, 0.475, words)).toEqual([
+    expect(decisionTooltipLines(unlabelled, 1, 0.475, words).map(runsToText)).toEqual([
       "Sample 2",
       "Model output: 0.475",
     ]);

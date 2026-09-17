@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Explanation, ParsedExplanation, TableView } from "../core/types";
-import { parseExplanation } from "../core/parse";
+import { parseExplanation, sampleDisplayName } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { decisionLayout } from "../core/decisionLayout";
 import { ColormapName } from "../core/colormap";
@@ -8,7 +8,8 @@ import { formatFeatureLabel, formatLevel } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { decisionTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
-import { TOOLTIP_LINE_HEIGHT, placeTooltip } from "../core/tooltip";
+import { HoverBox } from "./HoverBox";
+import { TOOLTIP_LINE_HEIGHT, TooltipRun, placeTooltip, runsToText } from "../core/tooltip";
 
 
 export function decisionTooltipLines(
@@ -16,10 +17,10 @@ export function decisionTooltipLines(
   sampleIndex: number,
   modelOutput: number,
   words: PlotLabels,
-): string[] {
+): TooltipRun[][] {
   return [
-    parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1),
-    `${words.cumulativeShapValue}: ${formatLevel(modelOutput)}`,
+    [{ text: sampleDisplayName(parsed, sampleIndex, words) }],
+    [{ text: `${words.cumulativeShapValue}: ${formatLevel(modelOutput)}` }],
   ];
 }
 
@@ -66,12 +67,13 @@ export function ShapDecision({
     : layout.paths.find((path) => path.sampleIndex === hovered) ?? null;
   const activePoint = activePath?.points[activePath.points.length - 1];
   const modelOutput = activePath?.values[activePath.values.length - 1];
-  const tooltipLines = hovered === null || modelOutput === undefined
+  const tooltipLines: TooltipRun[][] = hovered === null || modelOutput === undefined
     ? []
     : decisionTooltipLines(parsed, hovered, modelOutput, words);
   const tooltip = activePoint
     ? placeTooltip({
-        anchorX: activePoint.x, anchorY: activePoint.y, lines: tooltipLines,
+        anchorX: activePoint.x, anchorY: activePoint.y,
+        lines: tooltipLines.map(runsToText),
         lineHeight: TOOLTIP_LINE_HEIGHT, minWidth: 160,
         chartWidth: width, chartHeight: layout.height,
       })
@@ -113,16 +115,7 @@ export function ShapDecision({
             textAnchor="middle" fontSize={13} fill="#333333">
         {words.cumulativeShapValue}
       </text>
-      {tooltip && (
-        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
-          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
-                fill="#ffffff" stroke="#cccccc" />
-          {tooltipLines.map((line, index) => (
-            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
-                  fontSize={11} fill="#222222">{line}</text>
-          ))}
-        </g>
-      )}
+      {tooltip && <HoverBox box={tooltip} lines={tooltipLines} />}
       </svg>
       <ChartTable data={table} view={tableView} />
     </>

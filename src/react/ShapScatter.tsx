@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Explanation, ParsedExplanation, TableView } from "../core/types";
-import { parseExplanation } from "../core/parse";
+import { parseExplanation, sampleDisplayName } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { ColormapName, UNCOLOURED, sampleColormap } from "../core/colormap";
 import { strongestInteraction } from "../core/interactions";
@@ -10,8 +10,9 @@ import { PlotLabels, resolveLabels } from "../core/labels";
 import { AXIS_TITLE_DY, niceTicks, tickLabel, tickSpace } from "../core/ticks";
 import { scatterTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
+import { HoverBox } from "./HoverBox";
 import { colorBarLayout, ColorBarGeometry, colorScaleTitleParts } from "../core/colorBar";
-import { ColorBar } from "./ColorBar";
+import { ColorBar, ColorKeyFrame } from "./ColorBar";
 import { GLYPH_PX, TOOLTIP_LINE_HEIGHT, TooltipRun, namedValue, placeTooltip, runsToText } from "../core/tooltip";
 
 const MARGIN = { right: 24, top: 16, bottom: 56 };
@@ -73,7 +74,7 @@ export type ScatterGeometry = {
 };
 
 const sampleName = (parsed: ParsedExplanation, sampleIndex: number, words: PlotLabels) =>
-  parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1);
+  sampleDisplayName(parsed, sampleIndex, words);
 
 export function scatterTooltipLines(
   parsed: ParsedExplanation,
@@ -501,39 +502,11 @@ export function ShapScatter({
           {geometry.colorNote}
         </text>
       )}
-      {/* One light panel around the strip, its ticks and its title.
-          Apart, the rotated title sits exactly where a right-hand y axis title
-          would and a reader takes it for one — which is what happened. Boxed,
-          the three pieces read as the single key they are. */}
       {geometry.colorBar && (
-        <rect
-          x={geometry.colorBar.x - 10}
-          y={geometry.plotTop - 10}
-          width={geometry.colorBar.right - geometry.colorBar.x + 16}
-          height={geometry.plotBottom - geometry.plotTop + 20}
-          rx={4}
-          fill="none"
-          stroke="#e5e5e5"
-          strokeWidth={1}
-        />
+        <ColorKeyFrame bar={geometry.colorBar} top={geometry.plotTop} bottom={geometry.plotBottom} />
       )}
       {geometry.colorBar && <ColorBar bar={geometry.colorBar} />}
-      {tooltip && (
-        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
-          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
-                fill="#ffffff" stroke="#cccccc" />
-          {tooltipLines.map((line, index) => (
-            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
-                  fontSize={11} fill="#222222">
-              {line.map((run, runIndex) => (
-                <tspan key={`run-${runIndex}`} fontStyle={run.italic ? "italic" : undefined}>
-                  {run.text}
-                </tspan>
-              ))}
-            </text>
-          ))}
-        </g>
-      )}
+      {tooltip && <HoverBox box={tooltip} lines={tooltipLines} />}
       </svg>
       <ChartTable data={table} view={tableView} />
     </>

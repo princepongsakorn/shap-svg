@@ -4,6 +4,40 @@ import { ColorBarGeometry } from "../core/colorBar";
  * A vertical colour bar the way matplotlib draws SHAP's: no outline, no tick
  * marks, a label at each end, and the title rotated to read bottom to top.
  */
+/** How far the surround sits outside the key's own extent. */
+const FRAME_PAD = 10;
+
+/**
+ * A light surround for the whole key — the gradient, its ticks and its title.
+ *
+ * Apart, the rotated title sits exactly where a right-hand y axis title would
+ * and a reader takes it for one. Boxed, the three pieces read as the single key
+ * they are. Charts whose key is titled with a quantity rather than a taxon
+ * (beeswarm, heatmap) do not need it.
+ */
+export function ColorKeyFrame({
+  bar,
+  top,
+  bottom,
+}: {
+  bar: ColorBarGeometry;
+  top: number;
+  bottom: number;
+}) {
+  return (
+    <rect
+      x={bar.x - FRAME_PAD}
+      y={top - FRAME_PAD}
+      width={bar.right - bar.x + FRAME_PAD + 6}
+      height={bottom - top + FRAME_PAD * 2}
+      rx={4}
+      fill="none"
+      stroke="#e5e5e5"
+      strokeWidth={1}
+    />
+  );
+}
+
 export function ColorBar({ bar }: { bar: ColorBarGeometry }) {
   return (
     <g role="img" aria-label={`${bar.label.text}: ${bar.ticks[0].label} to ${bar.ticks[1].label}`}>

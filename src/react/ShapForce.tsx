@@ -8,6 +8,7 @@ import { PlotLabels, resolveLabels } from "../core/labels";
 import { forceTableRows } from "../core/tableRows";
 import { GLYPH_PX, TOOLTIP_LINE_HEIGHT, TooltipRun, placeTooltip, runsToText } from "../core/tooltip";
 import { ChartTable } from "./ChartTable";
+import { HoverBox } from "./HoverBox";
 
 
 export function abbreviateBinomialLabel(label: string, isOtherRow: boolean): string | null {
@@ -189,22 +190,7 @@ export function ShapForce({
             textAnchor="middle" fontSize={11} fill="#666666">
         {words.baseValue}
       </text>
-      {tooltip && tooltipLines.length > 0 && (
-        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
-          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
-                fill="#ffffff" stroke="#cccccc" />
-          {tooltipLines.map((line, index) => (
-            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
-                  fontSize={11} fill="#222222">
-              {line.map((run, runIndex) => (
-                <tspan key={`run-${runIndex}`} fontStyle={run.italic ? "italic" : undefined}>
-                  {run.text}
-                </tspan>
-              ))}
-            </text>
-          ))}
-        </g>
-      )}
+      {tooltip && <HoverBox box={tooltip} lines={tooltipLines} />}
       </svg>
       <ChartTable data={table} view={tableView} />
     </>

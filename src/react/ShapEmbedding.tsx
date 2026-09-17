@@ -1,13 +1,14 @@
 import { useMemo, useState } from "react";
 import { Explanation, ParsedExplanation, TableView } from "../core/types";
-import { parseExplanation } from "../core/parse";
+import { parseExplanation, sampleDisplayName } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
 import { embeddingLayout } from "../core/embeddingLayout";
-import { ColorBar } from "./ColorBar";
+import { ColorBar, ColorKeyFrame } from "./ColorBar";
 import { ColormapName } from "../core/colormap";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { embeddingTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
+import { HoverBox } from "./HoverBox";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { TOOLTIP_LINE_HEIGHT, TooltipRun, placeTooltip, runsToText } from "../core/tooltip";
 
@@ -24,7 +25,7 @@ export function embeddingTooltipLines(
   const row = parsed.values[sampleIndex];
   const sum = row.reduce((total, value) => total + value, 0);
   const lines: TooltipRun[][] = [
-    [{ text: parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1) }],
+    [{ text: sampleDisplayName(parsed, sampleIndex, words) }],
     // Where this Sample's prediction landed, which is what a reader is actually
     // after; Σφ alone is the distance travelled, not the destination.
     [{ text: `${words.modelOutput}: ${formatLevel(parsed.baseValues[sampleIndex] + sum)}` }],
@@ -143,21 +144,8 @@ export function ShapEmbedding({
         <line data-axis-spine="bottom" x1={layout.plotLeft} x2={layout.plotRight}
               y1={layout.plotBottom} y2={layout.plotBottom} stroke="#333333" strokeWidth={1} />
       </g>
-      {/* One light panel around the strip, its ticks and its title.
-          Apart, the rotated title sits exactly where a right-hand y axis title
-          would and a reader takes it for one — which is what happened. Boxed,
-          the three pieces read as the single key they are. */}
       {layout.colorBar && (
-        <rect
-          x={layout.colorBar.x - 10}
-          y={layout.plotTop - 10}
-          width={layout.colorBar.right - layout.colorBar.x + 16}
-          height={layout.plotBottom - layout.plotTop + 20}
-          rx={4}
-          fill="none"
-          stroke="#e5e5e5"
-          strokeWidth={1}
-        />
+        <ColorKeyFrame bar={layout.colorBar} top={layout.plotTop} bottom={layout.plotBottom} />
       )}
       {layout.colorBar && <ColorBar bar={layout.colorBar} />}
       <text x={(layout.plotLeft + layout.plotRight) / 2} y={height - (layout.xMeaning ? 28 : 14)}
@@ -182,22 +170,7 @@ export function ShapEmbedding({
           {layout.yMeaning}
         </text>
       )}
-      {tooltip && (
-        <g pointerEvents="none" transform={`translate(${tooltip.x} ${tooltip.y})`}>
-          <rect x={0} y={0} width={tooltip.width} height={tooltip.height} rx={3}
-                fill="#ffffff" stroke="#cccccc" />
-          {tooltipLines.map((line, index) => (
-            <text key={`tooltip-${index}`} x={7} y={16 + index * TOOLTIP_LINE_HEIGHT}
-                  fontSize={11} fill="#222222">
-              {line.map((run, runIndex) => (
-                <tspan key={`run-${runIndex}`} fontStyle={run.italic ? "italic" : undefined}>
-                  {run.text}
-                </tspan>
-              ))}
-            </text>
-          ))}
-        </g>
-      )}
+      {tooltip && <HoverBox box={tooltip} lines={tooltipLines} />}
       </svg>
       <ChartTable data={table} view={tableView} />
     </>
