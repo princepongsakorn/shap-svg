@@ -214,6 +214,14 @@ so the sum over all displayed rows always equals the sum over all Features — t
 | V3 | Species names render italic with `_` replaced by a space | Biology typesetting convention; the existing matplotlib path already does this |
 | V4 | Colour legends carry numeric ticks | SHAP labels only "High"/"Low" |
 | V5 | The heatmap `f(x)` line gets a real axis and tooltip | SHAP normalises it and draws it with no scale |
+| V6 | A neutral-midpoint colour map is offered through `colormap` | Measured on the shipped lookup table, `red_blue` sits at OKLab lightness 0.512 at its midpoint against 0.636 and 0.635 at the poles, so a Feature that contributed nothing is drawn with the most visual weight. `red_blue` stays the default |
+| V7 | The decision plot's x limits are always symmetric about the Base value | `_decision.py` promises this in a comment and its `n > m` branch returns the raw range instead; since the colour scale is clamped to those limits, the asymmetry slides the ramp's neutral point off the Base value |
+| V8 | The dependence scatter separates undetected Samples into an Absent band beside a log axis | Abundance is zero-inflated and D4 fixes a zero as a true absence; on one linear axis those Samples pile into a stripe that hides the dose–response shape. SHAP already draws `NaN` values off the axis, so this is the same device applied to zeros |
+| V9 | The scatter reports its interaction score and declines to colour below a threshold | `_scatter.py` takes `approximate_interactions(...)[0]` without asking how strong it is, so a colour chosen from noise is indistinguishable from one chosen from a real interaction |
+| V10 | The scatter draws a binned-median trend line | The dose–response question is the chart's purpose and SHAP answers none of it. A median rather than a smoother: no bandwidth to tune, and it cannot invent a curve the data does not contain |
+| V11 | Every taxon name renders italic in hover boxes, colour-scale titles and table views too | V3's convention applied everywhere a name appears, not only to row labels. SHAP italicises nothing |
+| V12 | Each new chart publishes its own numbers as a table | A rendered figure is opaque to a screen reader, to text search, and to anyone recovering a value from it |
+| V13 | The clustered bar keeps taxa as separate rows | SHAP fuses two Features into one row labelled `A + B`; row merging is deferred, so the cut is taken and the dendrogram shows a connection crossing it |
 
 V1 and V3 apply to milestone 1. V2 is milestone 1 as the `faithfulOtherRow` flag. V4 and V5 arrive
 with beeswarm and heatmap.

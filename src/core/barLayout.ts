@@ -55,6 +55,13 @@ export function clusteredOrder(input: ClusteredOrderInput): {
   linkage: number[][];
 } {
   const { parsed, importanceOrder, mode, cutoff } = input;
+  // A supplied matrix sizes its own pool, and its leaf `i` is taken to be the
+  // `i`-th most important Feature by mean |SHAP value|. That is the order a
+  // Python-side clustering over the same top-K produces, and there is no way to
+  // check it from the matrix alone — a producer that ordered its leaves
+  // differently would be mislabelled here in silence. When the Python path
+  // lands it should send its Feature indices alongside the matrix so this can
+  // be verified rather than assumed.
   const poolSize = Array.isArray(mode) ? mode.length + 1 : CLUSTERING_POOL;
   const pool = importanceOrder.slice(0, Math.min(poolSize, importanceOrder.length));
 

@@ -74,8 +74,10 @@ function median(sorted: number[]): number {
  * A median rather than a smoother: it takes no bandwidth parameter, needs no
  * dependency, and cannot invent a curve the data does not contain — which
  * matters when a reader will carry the shape into a biological claim. The
- * window is the one `approximate_interactions` uses, so a single constant
- * governs both.
+ * The window comes from the same formula the interaction score uses, but over
+ * the *detected* Samples rather than all of them — a trend over detected
+ * Samples should be binned by how many of those there are. On zero-inflated
+ * data the two window widths therefore differ, and deliberately.
  */
 export function binnedMedianTrend(detected: ScatterPoint[]): TrendPoint[] {
   if (detected.length < MIN_TREND_SAMPLES) return [];
