@@ -72,6 +72,12 @@ export type PlotLabels = {
    * be, so without it a reader takes the scale for an axis.
    */
   colorScale: (what: string) => string;
+  /**
+   * An embedding axis whose positions came from outside the chart, where a
+   * variance share would be meaningless — and where calling the axis a
+   * principal component would be a claim the chart cannot make.
+   */
+  suppliedComponent: (index: number) => string;
 };
 
 export const shapLabels: PlotLabels = {
@@ -103,6 +109,7 @@ export const shapLabels: PlotLabels = {
   tableCaption: "Chart data",
   componentTracksTotal: (r) => `tracks Σφ, r = ${formatFixed(r, 2)}`,
   colorScale: (what) => `Colour: ${what}`,
+  suppliedComponent: (index) => `Dimension ${index}`,
 };
 
 /** The given wording over SHAP's. A key given as undefined keeps the default. */

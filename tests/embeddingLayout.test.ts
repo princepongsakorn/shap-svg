@@ -38,8 +38,11 @@ describe("embeddingLayout", () => {
 
   it("uses supplied coordinates instead of running PCA, and drops the ratios", () => {
     const l = layout({ coords: [[0, 0], [1, 1], [2, 2], [3, 3]] as [number, number][] });
-    expect(l.xTitle).toBe("SHAP PC1");
-    expect(l.yTitle).toBe("SHAP PC2");
+    // Not "SHAP PC1": a projection computed elsewhere may be nothing of the
+    // kind, and the wording comes from the labels so it can be translated.
+    expect(l.xTitle).toBe(shapLabels.suppliedComponent(1));
+    expect(l.yTitle).toBe(shapLabels.suppliedComponent(2));
+    expect(l.xTitle).not.toContain("PC");
     expect(l.points[0].cx).toBeLessThan(l.points[3].cx);
   });
 

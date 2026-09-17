@@ -131,7 +131,7 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
   const title = (index: 1 | 2) =>
     projection
       ? words.principalComponent(index, projection.varianceRatios[index - 1])
-      : `SHAP PC${index}`;
+      : words.suppliedComponent(index);
 
   // Without this the reader sees a blue-to-red gradient with nothing anywhere
   // saying what it measures, which is the one thing colour must never do.

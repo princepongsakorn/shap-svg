@@ -116,11 +116,25 @@ export function ShapBar({
             .filter((bar) => bar.featureIndex !== null)
             .map((bar) => [bar.featureIndex!, bar.centerY]),
         );
-        const leafPositions = layout.clustered.pool
-          .map((featureIndex) => displayedPositions.get(featureIndex) ?? layout.plotBottom);
+        // A pool Feature the chart does not display has no row to hang from.
+        // Stacking them all on plotBottom drew ~35 leaves on one line; laying
+        // them out below the last row instead lets the connections that cross
+        // the display cut run off the bottom edge, which is what the design
+        // asks for while row merging stays unimplemented.
+        const hiddenPitch = rowHeight * 0.4;
+        let hiddenRank = 0;
+        const leafPositions = layout.clustered.pool.map((featureIndex) => {
+          const displayed = displayedPositions.get(featureIndex);
+          if (displayed !== undefined) return displayed;
+          hiddenRank += 1;
+          return layout.plotBottom + hiddenRank * hiddenPitch;
+        });
         const segments = dendrogramCoords(leafPositions, layout.clustered.linkage);
         const heights = segments.flatMap((s) => s.ys);
-        const tallest = Math.max(1e-9, ...heights);
+        // The cutoff is drawn on the same scale as the tree, so the scale has
+        // to cover it: with every merge below the cutoff the line would
+        // otherwise land beyond the tree's own box.
+        const tallest = Math.max(1e-9, clusteringCutoff, ...heights);
         const treeLeft = width - 140;
         const treeWidth = 110;
         const toTreeX = (height: number) => treeLeft + (height / tallest) * treeWidth;
