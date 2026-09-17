@@ -199,3 +199,25 @@ export function scalarFormatterLabels(locs: number[]): { labels: string[]; offse
     ? { labels }
     : { labels, offsetText: `1e${String(order).replace("-", MINUS)}` };
 }
+
+/**
+ * A colour-scale title split into runs, with a taxon's name italic.
+ *
+ * Two charts build the same title the same way — the scatter over the Feature
+ * it colours by, the embedding over the Feature whose SHAP value it colours by
+ * — and a taxon's name sits in the middle of the title, not at its start, so a
+ * prefix would not do. Returns undefined when the name is not in the title, in
+ * which case the caller draws the title as one string.
+ */
+export function colorScaleTitleParts(
+  title: string,
+  taxon: string,
+): { text: string; italic?: boolean }[] | undefined {
+  const at = title.indexOf(taxon);
+  if (at < 0) return undefined;
+  return [
+    { text: title.slice(0, at) },
+    { text: taxon, italic: true },
+    { text: title.slice(at + taxon.length) },
+  ];
+}

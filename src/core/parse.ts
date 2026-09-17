@@ -1,3 +1,4 @@
+import { PlotLabels } from "./labels";
 import {
   Explanation,
   InvalidExplanationError,
@@ -152,4 +153,18 @@ export function parseExplanation(
     nSamples,
     nFeatures,
   };
+}
+
+/**
+ * What a person reads for a Sample: the payload's own label when it carries
+ * one, else a number counting from 1.
+ *
+ * Four charts and the table view all need this, and each had its own copy.
+ */
+export function sampleDisplayName(
+  parsed: ParsedExplanation,
+  sampleIndex: number,
+  words: PlotLabels,
+): string {
+  return parsed.sampleLabels?.[sampleIndex] ?? words.sampleFallback(sampleIndex + 1);
 }

@@ -6,11 +6,9 @@ import { forceLayout } from "../core/forceLayout";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { forceTableRows } from "../core/tableRows";
-import { placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
+import { GLYPH_PX, TOOLTIP_LINE_HEIGHT, TooltipRun, placeTooltip, runsToText } from "../core/tooltip";
 import { ChartTable } from "./ChartTable";
 
-/** Average advance of one glyph in the force chart's 11–12px text. */
-const TEXT_CHAR_PX = 6.5;
 
 export function abbreviateBinomialLabel(label: string, isOtherRow: boolean): string | null {
   if (isOtherRow) return null;
@@ -19,7 +17,7 @@ export function abbreviateBinomialLabel(label: string, isOtherRow: boolean): str
 }
 
 function estimateTextWidth(text: string): number {
-  return text.length * TEXT_CHAR_PX;
+  return text.length * GLYPH_PX.body;
 }
 
 export function forceSegmentLabel(
@@ -49,7 +47,6 @@ function clampTextX(
   return Math.max(minimum, Math.min(x, maximum));
 }
 
-const TOOLTIP_LINE_HEIGHT = 15;
 
 /**
  * What a hovered segment says.

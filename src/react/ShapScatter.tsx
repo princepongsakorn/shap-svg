@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Explanation, ParsedExplanation, TableView } from "../core/types";
 import { parseExplanation } from "../core/parse";
 import { groupExplanationByGenus } from "../core/taxonomy";
-import { ColormapName, sampleColormap } from "../core/colormap";
+import { ColormapName, UNCOLOURED, sampleColormap } from "../core/colormap";
 import { strongestInteraction } from "../core/interactions";
 import { binnedMedianTrend, logDomain, scatterPoints } from "../core/scatterLayout";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
@@ -10,9 +10,9 @@ import { PlotLabels, resolveLabels } from "../core/labels";
 import { AXIS_TITLE_DY, niceTicks, tickLabel, tickSpace } from "../core/ticks";
 import { scatterTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
-import { colorBarLayout, ColorBarGeometry } from "../core/colorBar";
+import { colorBarLayout, ColorBarGeometry, colorScaleTitleParts } from "../core/colorBar";
 import { ColorBar } from "./ColorBar";
-import { namedValue, placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
+import { GLYPH_PX, TOOLTIP_LINE_HEIGHT, TooltipRun, namedValue, placeTooltip, runsToText } from "../core/tooltip";
 
 const MARGIN = { right: 24, top: 16, bottom: 56 };
 /** Width reserved for the Absent band, and the gap that separates it. */
@@ -23,14 +23,9 @@ const ABSENT_BAND = 56;
  * on a 56px band, so a narrower gap puts the two strings a pixel apart.
  */
 const ABSENT_GAP = 40;
-/** Average advance of one glyph of the 11px axis text. Estimated, never measured. */
-const AXIS_CHAR_PX = 5.6;
 const DOT_RADIUS = 4;
 const TICK_LABEL_PT = 11;
-const UNCOLOURED = "#1f77b4";
 const Y_TITLE_X = 14;
-const TOOLTIP_LINE_HEIGHT = 15;
-const ESTIMATED_GLYPH_WIDTH = 6.5;
 
 export type ScatterGeometryInput = {
   parsed: ParsedExplanation;
@@ -125,7 +120,7 @@ export function wrapToWidth(text: string, maxWidth: number): string[] {
   let line = "";
   for (const word of words) {
     const candidate = line ? `${line} ${word}` : word;
-    if (line && candidate.length * AXIS_CHAR_PX > maxWidth) {
+    if (line && candidate.length * GLYPH_PX.axis > maxWidth) {
       lines.push(line);
       line = word;
     } else {
@@ -166,7 +161,7 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
     return formatShapValue(value !== 0 && normalized === 0 ? value : normalized);
   };
   const widestYTick = Math.max(...yTickValues.map((value) => yTickLabel(value).length), 1)
-    * ESTIMATED_GLYPH_WIDTH;
+    * GLYPH_PX.body;
   const plotLeft = Math.max(70, Y_TITLE_X + 13 + 8 + widestYTick + 8);
   const plotRight = width - (colorBar ? 90 : MARGIN.right);
   const detectedLeft = absent.length > 0 ? plotLeft + ABSENT_BAND + ABSENT_GAP : plotLeft;
@@ -252,17 +247,7 @@ export function scatterGeometry(input: ScatterGeometryInput): ScatterGeometry {
   // Only the taxon's name is italic — not the word that marks this a colour
   // scale, and not the quantity.
   const scaleParts = colorFeatureLabel
-    ? (() => {
-        const title = words.colorScale(scaleSubject);
-        const at = title.indexOf(colorFeatureLabel);
-        return at < 0
-          ? undefined
-          : [
-              { text: title.slice(0, at) },
-              { text: colorFeatureLabel, italic: true },
-              { text: title.slice(at + colorFeatureLabel.length) },
-            ];
-      })()
+    ? colorScaleTitleParts(words.colorScale(scaleSubject), colorFeatureLabel)
     : undefined;
   const colorBarGeometry = (colorFeatureIndex === null && !byOutput) || !colorBar
     ? null

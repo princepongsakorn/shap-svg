@@ -15,37 +15,13 @@
  * so that branch is dropped rather than ported dead.
  */
 
+import { pearson } from "./stats";
+
 const MAX_WINDOW = 50;
 
 /** SHAP's `inc`: max(min(floor(n / 10), 50), 1). */
 export function interactionWindowSize(sampleCount: number): number {
   return Math.max(Math.min(Math.floor(sampleCount / 10), MAX_WINDOW), 1);
-}
-
-function pearson(a: number[], b: number[]): number {
-  const n = a.length;
-  if (n < 2) return 0;
-  let meanA = 0;
-  let meanB = 0;
-  for (let i = 0; i < n; i++) {
-    meanA += a[i];
-    meanB += b[i];
-  }
-  meanA /= n;
-  meanB /= n;
-
-  let cov = 0;
-  let varA = 0;
-  let varB = 0;
-  for (let i = 0; i < n; i++) {
-    const da = a[i] - meanA;
-    const db = b[i] - meanB;
-    cov += da * db;
-    varA += da * da;
-    varB += db * db;
-  }
-  if (!(varA > 0) || !(varB > 0)) return 0;
-  return cov / Math.sqrt(varA * varB);
 }
 
 function eligibleInteractionFeature(column: number[]): boolean {

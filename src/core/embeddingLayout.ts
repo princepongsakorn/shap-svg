@@ -1,8 +1,9 @@
 import { ParsedExplanation } from "./types";
 import { shapPca } from "./pca";
-import { ColormapName, sampleColormap } from "./colormap";
-import { colorBarLayout, ColorBarGeometry } from "./colorBar";
+import { ColormapName, UNCOLOURED, sampleColormap} from "./colormap";
+import { colorBarLayout, ColorBarGeometry, colorScaleTitleParts } from "./colorBar";
 import { formatFeatureLabel, formatShapValue } from "./format";
+import { pearson } from "./stats";
 import { PlotLabels, resolveLabels } from "./labels";
 
 /**
@@ -71,34 +72,9 @@ export type EmbeddingLayout = {
   yMeaning: string | null;
 };
 
-const UNCOLOURED = "#1f77b4";
 /** Below this |r| the component is not tracking the total closely enough to say so. */
 const MEANING_MIN_R = 0.7;
 
-function correlation(a: number[], b: number[]): number {
-  const n = a.length;
-  if (n < 2) return 0;
-  let meanA = 0;
-  let meanB = 0;
-  for (let i = 0; i < n; i++) {
-    meanA += a[i];
-    meanB += b[i];
-  }
-  meanA /= n;
-  meanB /= n;
-  let cov = 0;
-  let varA = 0;
-  let varB = 0;
-  for (let i = 0; i < n; i++) {
-    const da = a[i] - meanA;
-    const db = b[i] - meanB;
-    cov += da * db;
-    varA += da * da;
-    varB += db * db;
-  }
-  if (!(varA > 0) || !(varB > 0)) return 0;
-  return cov / Math.sqrt(varA * varB);
-}
 
 export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
   const { parsed, width, height, colorBy, coords, colormap = "red_blue", colorBar = true } = input;
@@ -169,24 +145,14 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
         : "";
   // Only the taxon's name is italic, as a scientific name always is.
   const colourParts = colouredTaxon
-    ? (() => {
-        const title = words.colorScale(colourLabel);
-        const at = title.indexOf(colouredTaxon);
-        return at < 0
-          ? undefined
-          : [
-              { text: title.slice(0, at) },
-              { text: colouredTaxon, italic: true },
-              { text: title.slice(at + colouredTaxon.length) },
-            ];
-      })()
+    ? colorScaleTitleParts(words.colorScale(colourLabel), colouredTaxon)
     : undefined;
 
   const inside = (value: number, low: number, high: number) => value > low && value < high;
 
   const totals = parsed.values.map((row) => row.reduce((sum, value) => sum + value, 0));
   const meaningOf = (axis: 0 | 1): string | null => {
-    const r = correlation(positions.map((position) => position[axis]), totals);
+    const r = pearson(positions.map((position) => position[axis]), totals);
     return Math.abs(r) >= MEANING_MIN_R ? words.componentTracksTotal(r) : null;
   };
 

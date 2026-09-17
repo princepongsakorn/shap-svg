@@ -9,10 +9,9 @@ import { PlotLabels, resolveLabels } from "../core/labels";
 import { embeddingTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
-import { placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
+import { TOOLTIP_LINE_HEIGHT, TooltipRun, placeTooltip, runsToText } from "../core/tooltip";
 
 const DOT_RADIUS = 4;
-const TOOLTIP_LINE_HEIGHT = 15;
 /** How many of a Sample's strongest SHAP values the hover box names. */
 const TOOLTIP_TOP_FEATURES = 3;
 

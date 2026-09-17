@@ -8,9 +8,8 @@ import { formatFeatureLabel, formatLevel } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { decisionTableRows } from "../core/tableRows";
 import { ChartTable } from "./ChartTable";
-import { placeTooltip } from "../core/tooltip";
+import { TOOLTIP_LINE_HEIGHT, placeTooltip } from "../core/tooltip";
 
-const TOOLTIP_LINE_HEIGHT = 15;
 
 export function decisionTooltipLines(
   parsed: ParsedExplanation,
