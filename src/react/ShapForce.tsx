@@ -6,7 +6,7 @@ import { forceLayout } from "../core/forceLayout";
 import { formatFeatureLabel, formatLevel, formatShapValue } from "../core/format";
 import { PlotLabels, resolveLabels } from "../core/labels";
 import { forceTableRows } from "../core/tableRows";
-import { namedValue, placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
+import { placeTooltip, runsToText, TooltipRun } from "../core/tooltip";
 import { ChartTable } from "./ChartTable";
 
 /** Average advance of one glyph in the force chart's 11–12px text. */

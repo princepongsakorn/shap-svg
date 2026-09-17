@@ -53,14 +53,14 @@ affiliated with the SHAP authors.
 
 | Component | SHAP counterpart | Shows |
 | --- | --- | --- |
-| [`Plots.bar`](docs/BAR.md) | `shap.plots.bar` | mean(\|SHAP value\|) per Feature across Samples |
+| [`Plots.bar`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/BAR.md) | `shap.plots.bar` | mean(\|SHAP value\|) per Feature across Samples |
 | `Plots.beeswarm` | `shap.plots.beeswarm` | one dot per Sample per Feature, coloured by Feature value |
 | `Plots.heatmap` | `shap.plots.heatmap` | Samples × Features coloured by SHAP value, with the Model output line above |
 | `Plots.waterfall` | `shap.plots.waterfall` | how one Sample's prediction is built from the Base value to the Model output |
-| [`Plots.scatter`](docs/SCATTER.md) | `shap.plots.scatter` | one Feature's value against its SHAP value across Samples |
-| [`Plots.embedding`](docs/EMBEDDING.md) | `shap.plots.embedding` | Samples positioned by similarity between their SHAP value vectors |
-| [`Plots.decision`](docs/DECISION.md) | `shap.plots.decision` | cumulative Feature effects from the Base value to each Sample's Model output |
-| [`Plots.force`](docs/FORCE.md) | `shap.plots.force` | one Sample's positive and negative Feature effects in a compact row |
+| [`Plots.scatter`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/SCATTER.md) | `shap.plots.scatter` | one Feature's value against its SHAP value across Samples |
+| [`Plots.embedding`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/EMBEDDING.md) | `shap.plots.embedding` | Samples positioned by similarity between their SHAP value vectors |
+| [`Plots.decision`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/DECISION.md) | `shap.plots.decision` | cumulative Feature effects from the Base value to each Sample's Model output |
+| [`Plots.force`](https://github.com/princepongsakorn/shap-svg/blob/main/docs/FORCE.md) | `shap.plots.force` | one Sample's positive and negative Feature effects in a compact row |
 
 Every chart is a pure component: all state that changes what is drawn arrives through props, so the
 host application owns its own controls. The only internal state is hover highlighting.
@@ -239,8 +239,8 @@ Per chart:
 | `Plots.scatter`, `Plots.embedding`, `Plots.decision` | `colormap` | `"red_blue"` | `"red_blue"` or `"red_white_blue"` |
 | `Plots.scatter`, `Plots.embedding`, `Plots.decision`, `Plots.force` | `tableView` | `"hidden"` | `"hidden"`, `"visible"`, or `"none"` |
 
-The complete props and examples for the new charts are in [Scatter](docs/SCATTER.md),
-[Embedding](docs/EMBEDDING.md), [Decision](docs/DECISION.md), and [Force](docs/FORCE.md).
+The complete props and examples for the new charts are in [Scatter](https://github.com/princepongsakorn/shap-svg/blob/main/docs/SCATTER.md),
+[Embedding](https://github.com/princepongsakorn/shap-svg/blob/main/docs/EMBEDDING.md), [Decision](https://github.com/princepongsakorn/shap-svg/blob/main/docs/DECISION.md), and [Force](https://github.com/princepongsakorn/shap-svg/blob/main/docs/FORCE.md).
 
 ## Beyond SHAP
 

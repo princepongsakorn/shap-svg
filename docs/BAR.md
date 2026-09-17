@@ -10,7 +10,7 @@ clustering keeps related Features adjacent and draws their hierarchy beside the 
 | Prop | Default | Meaning |
 | --- | --- | --- |
 | `explanation` | — | the SHAP explanation payload |
-| `maxDisplay` | `10` | Features shown before the remainder becomes the Other features row |
+| `maxDisplay` | `10` | Features shown; any beyond this become the Other features row |
 | `faithfulOtherRow` | `false` | reproduce SHAP's boundary-row collapse when `true` |
 | `groupByGenus` | `false` | use the Genus view instead of the Species view |
 | `classIndex` | `1` | output to draw from a multi-output explanation |

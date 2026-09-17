@@ -64,7 +64,7 @@ export type EmbeddingLayout = {
   /**
    * What each component turns out to mean, said only when the data supports it.
    * A principal component has no inherent meaning — it is whichever direction
-   * the contributions vary along most — so the chart measures whether it lines
+   * the SHAP values vary along most — so the chart measures whether it lines
    * up with a Sample's summed SHAP values and stays silent when it does not.
    */
   xMeaning: string | null;
@@ -208,7 +208,7 @@ export function embeddingLayout(input: EmbeddingLayoutInput): EmbeddingLayout {
             {
               colormap,
               // The actual range, not "Low" and "High": these are signed
-              // contributions and their sign is the thing worth reading.
+              // SHAP values and their sign is the thing worth reading.
               tickLabels: [formatShapValue(colourLow), formatShapValue(colourHigh)],
               label: words.colorScale(colourLabel),
               ...(colourParts ? { labelParts: colourParts } : {}),

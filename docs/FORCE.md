@@ -11,7 +11,7 @@ segments meet at the Model output in a compact, single-row explanation.
 | --- | --- | --- |
 | `explanation` | — | the SHAP explanation payload |
 | `sampleIndex` | `0` | zero-based Sample index to explain |
-| `maxDisplay` | `10` | Features shown before the remainder becomes the Other features row |
+| `maxDisplay` | `10` | Features shown; any beyond this become the Other features row |
 | `faithfulOtherRow` | `false` | reproduce SHAP's boundary-row collapse when `true` |
 | `groupByGenus` | `false` | use the Genus view instead of the Species view |
 | `classIndex` | `1` | output to draw from a multi-output explanation |
@@ -23,8 +23,8 @@ segments meet at the Model output in a compact, single-row explanation.
 ## Differences from SHAP
 
 - `_force_matplotlib.py` receives every Feature and suppresses labels below its contribution
-  threshold, but it does not collapse the tail. At hundreds of Features those segments become too
-  narrow for a browser chart, so `maxDisplay` combines the tail into an Other features row while
+  threshold, but it collapses nothing. At hundreds of Features those segments become too
+  narrow for a browser chart, so `maxDisplay` gathers what it cannot show into an Other features row while
   preserving its summed SHAP value.
 - The Genus view is available through `groupByGenus`; the Species view remains the default.
 - `tableView` exposes every displayed segment in a real table for screen readers and text search. A

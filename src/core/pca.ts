@@ -97,7 +97,7 @@ export function shapPca(values: number[][], iterations = DEFAULT_ITERATIONS): Pc
   fixSign(first);
   const xs = project(centered, first);
 
-  // Deflate: strip the first component's contribution, then repeat.
+  // Deflate: strip the first component's share, then repeat.
   const residual = centered.map((row, i) =>
     row.map((v, j) => v - xs[i] * first[j]),
   );

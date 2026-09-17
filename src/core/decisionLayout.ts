@@ -10,7 +10,8 @@ import { ColormapName, sampleColormap } from "./colormap";
  *
  * It has no Other features row. Its `feature_display_range` simply omits the
  * Features it is not showing, and starts each path at the Base value *plus*
- * those Features' SHAP values — the remainder lives in the path's origin, and
+ * those Features' SHAP values — the Features it does not show live in the
+ * path's origin, and
  * an explicit row would draw it twice.
  *
  * Its x limits claim to be symmetric about the Base value and are not: the

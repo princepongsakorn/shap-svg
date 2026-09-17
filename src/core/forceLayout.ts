@@ -4,7 +4,7 @@ import { NEGATIVE_COLOR, POSITIVE_COLOR } from "./barLayout";
 import { PlotLabels, resolveLabels } from "./labels";
 
 /**
- * One Sample's contributions as a single horizontal bar.
+ * One Sample's SHAP values as a single horizontal bar.
  *
  * Positive SHAP values push in from the left and negative from the right; they
  * meet at f(x). The waterfall says the same thing but needs vertical space
@@ -13,7 +13,8 @@ import { PlotLabels, resolveLabels } from "./labels";
  *
  * `shap.plots.force` hands its renderer every Feature and lets the JavaScript
  * bundle deal with crowding. At p = 865 that is not an option, so this takes
- * `maxDisplay` and collapses the tail exactly as the waterfall does — an
+ * `maxDisplay` and collapses what it cannot show into the Other features row
+ * exactly as the waterfall does — an
  * addition, not a deviation: SHAP has no behaviour here to match.
  */
 

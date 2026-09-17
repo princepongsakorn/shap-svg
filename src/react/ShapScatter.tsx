@@ -95,7 +95,7 @@ export function scatterTooltipLines(
     );
   };
 
-  // The two taxa sit together. With the contribution between them the box read
+  // The two taxa sit together. With the SHAP value between them the box read
   // as three unrelated facts; adjacent, the second line is plainly the taxon
   // being asked about and the third the one its colour encodes.
   const lines: TooltipRun[][] = [

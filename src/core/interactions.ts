@@ -5,7 +5,7 @@
  * The method: sort Samples by the target Feature's value, walk them in fixed
  * windows, and sum |Pearson r| between each window's other-Feature values and
  * the correspondingly sorted SHAP values of the target. A Feature whose value
- * tracks the target's contribution within local neighbourhoods scores high.
+ * tracks the target's SHAP value within local neighbourhoods scores high.
  *
  * One deliberate change from SHAP. SHAP returns the raw sum, which grows with
  * the number of windows and so cannot be compared across Model outputs of
