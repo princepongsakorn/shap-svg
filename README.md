@@ -1,5 +1,7 @@
 # shap-svg
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23347993.svg)](https://doi.org/10.5281/zenodo.23347993)
+
 `shap-svg` is a browser rendering layer for the [`shap.plots`](https://shap.readthedocs.io/en/latest/api.html#plots)
 API. It reimplements eight SHAP plots as interactive SVG charts, exposed as React components through
 `shap-svg/react`, so web applications can present SHAP explanations without server-side matplotlib
@@ -336,6 +338,12 @@ where this package started.
 
 - [mlflow-explainable](https://github.com/princepongsakorn/mlflow-explainable) logs a model and its
   SHAP explainer to MLflow as one artifact — the Python side that produces the values these charts draw.
+
+## Citation
+
+To cite shap-svg, use its Zenodo DOI: [10.5281/zenodo.23347994](https://doi.org/10.5281/zenodo.23347994)
+for v0.3.1, or [10.5281/zenodo.23347993](https://doi.org/10.5281/zenodo.23347993) for every version.
+[`CITATION.cff`](CITATION.cff) has the same details, and GitHub offers them under "Cite this repository".
 
 ## License
 
