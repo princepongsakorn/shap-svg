@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "shap-svg: interactive SVG charts for SHAP explanations"
+abstract: >-
+  shap-svg draws SHAP explanations as interactive SVG charts in the browser,
+  from the SHAP values themselves rather than pre-rendered images. It follows
+  the layout and colours of the SHAP library's own plots and has a
+  framework-free core with React components.
+type: software
+authors:
+  - family-names: Pongsutiyakorn
+    given-names: Pongsakorn
+license: MIT
+repository-code: "https://github.com/princepongsakorn/shap-svg"
+url: "https://www.npmjs.com/package/shap-svg"
+version: 0.3.1
+date-released: "2026-10-14"
+keywords:
+  - SHAP
+  - explainable AI
+  - data visualization
+  - SVG
+  - React
